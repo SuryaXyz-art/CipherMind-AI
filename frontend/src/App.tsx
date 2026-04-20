@@ -1,0 +1,642 @@
+/**
+ * CipherMind AI — Main Application
+ *
+ * Privacy-first AI analytics platform powered by Fhenix CoFHE
+ * and Nous Hermes AI. All icons are professional SVGs.
+ */
+
+import React, { useState, useRef } from 'react';
+import { useFHE } from './hooks/useFHE';
+import { useCredit } from './hooks/useCredit';
+import { useTrading } from './hooks/useTrading';
+import { useResearch } from './hooks/useResearch';
+import { CreditForm, TradingForm } from './components/EncryptForm';
+import { EncryptAnimation } from './components/EncryptAnimation';
+import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
+import {
+  IconShield, IconShieldCheck, IconLock, IconUnlock, IconLink, IconCpu,
+  IconBarChart, IconTrendingUp, IconWallet, IconSearch, IconSend, IconKey,
+  IconActivity, IconAlertCircle, IconRefresh, IconX, IconGlobe, IconEye, IconZap,
+} from './components/Icons';
+
+type Page = 'home' | 'credit' | 'trading' | 'research';
+
+function App() {
+  const [page, setPage] = useState<Page>('home');
+  const fhe = useFHE();
+  const credit = useCredit();
+  const trading = useTrading();
+  const research = useResearch();
+
+  return (
+    <>
+      {/* ── Navigation ────────────────────────────────────────────── */}
+      <nav className="navbar" id="navbar">
+        <div className="navbar-inner">
+          <a className="navbar-logo" onClick={() => setPage('home')} style={{ cursor: 'pointer' }}>
+            <div className="navbar-logo-icon">C</div>
+            <span className="navbar-logo-text">CipherMind</span>
+          </a>
+
+          <ul className="navbar-nav">
+            {[
+              { id: 'home', label: 'Home' },
+              { id: 'credit', label: 'Credit Score' },
+              { id: 'trading', label: 'Trading Signals' },
+              { id: 'research', label: 'Research' },
+            ].map(item => (
+              <li key={item.id}>
+                <button
+                  className={`navbar-link ${page === item.id ? 'active' : ''}`}
+                  onClick={() => setPage(item.id as Page)}
+                  id={`nav-${item.id}`}
+                >
+                  {item.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <div>
+            {fhe.isInitialized ? (
+              <div className="flex items-center gap-3">
+                <span className="badge badge-success">
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--cm-success)', display: 'inline-block' }} />
+                  Connected
+                </span>
+                <span className="text-xs font-mono text-secondary">
+                  {fhe.address?.slice(0, 6)}...{fhe.address?.slice(-4)}
+                </span>
+                <button className="btn btn-ghost btn-sm" onClick={fhe.disconnect} id="disconnect-btn">
+                  Disconnect
+                </button>
+              </div>
+            ) : (
+              <button className="btn btn-primary btn-sm" onClick={fhe.connect} disabled={fhe.isConnecting} id="connect-btn">
+                <IconWallet size={15} />
+                {fhe.isConnecting ? 'Connecting...' : 'Connect Wallet'}
+              </button>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* ── Pages ─────────────────────────────────────────────────── */}
+      {page === 'home' && <HomePage onNavigate={setPage} />}
+      {page === 'credit' && <CreditPage isConnected={fhe.isInitialized} onConnect={fhe.connect} credit={credit} />}
+      {page === 'trading' && <TradingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} trading={trading} />}
+      {page === 'research' && <ResearchPage isConnected={fhe.isInitialized} onConnect={fhe.connect} research={research} />}
+    </>
+  );
+}
+
+// ── Home Page ────────────────────────────────────────────────────────
+
+function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
+  return (
+    <main>
+      {/* Hero Section */}
+      <section className="hero" id="hero">
+        <div className="hero-content">
+          <div className="hero-badge animate-fade-in">
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--cm-accent-1)', display: 'inline-block' }} />
+            Powered by Fhenix CoFHE &times; Nous Hermes AI
+          </div>
+
+          <h1 className="hero-title animate-fade-in stagger-1">
+            AI Intelligence,{' '}
+            <span className="gradient-text">Zero Exposure</span>
+          </h1>
+
+          <p className="hero-subtitle animate-fade-in stagger-2">
+            Get institutional-grade credit scoring, trading signals, and encrypted research powered by AI —
+            with your data encrypted end-to-end using Fully Homomorphic Encryption.
+            Your numbers stay encrypted. Always.
+          </p>
+
+          <div className="hero-actions animate-fade-in stagger-3">
+            <button className="btn btn-primary btn-lg" onClick={() => onNavigate('credit')} id="cta-credit">
+              <IconShieldCheck size={18} /> Get Your Credit Score
+            </button>
+            <button className="btn btn-secondary btn-lg" onClick={() => onNavigate('research')} id="cta-research">
+              <IconSearch size={18} /> Encrypted Research
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="section" id="features">
+        <div className="container">
+          <div className="text-center mb-6">
+            <h2 className="gradient-text" style={{ display: 'inline-block' }}>How It Works</h2>
+            <p className="text-secondary mt-2" style={{ maxWidth: '500px', margin: '12px auto 0' }}>
+              Privacy-preserving AI analytics in four trustless steps
+            </p>
+          </div>
+
+          <div className="grid-4" style={{ marginTop: '48px' }}>
+            {[
+              { Icon: IconLock, title: 'Encrypt Locally', desc: 'Your data is encrypted on your device using FHE before it ever leaves your browser.', color: 'var(--cm-accent-1)' },
+              { Icon: IconLink, title: 'Submit On-Chain', desc: 'Encrypted data is submitted to Fhenix CoFHE smart contracts on Arbitrum Sepolia.', color: 'var(--cm-accent-2)' },
+              { Icon: IconCpu, title: 'AI Inference', desc: 'Nous Hermes AI analyzes anonymized feature bands — never your raw numbers.', color: 'var(--cm-accent-3)' },
+              { Icon: IconUnlock, title: 'Unseal Results', desc: 'Only you can decrypt the encrypted results using your private key.', color: 'var(--cm-success)' },
+            ].map((feature, i) => (
+              <div key={i} className={`card feature-card animate-fade-in stagger-${i + 1}`}>
+                <div className="feature-icon"><feature.Icon size={24} color={feature.color} /></div>
+                <h4 className="feature-title">{feature.title}</h4>
+                <p className="feature-desc">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Products Section */}
+      <section className="section" id="products" style={{ background: 'var(--cm-bg-secondary)' }}>
+        <div className="container">
+          <div className="text-center mb-6">
+            <h2 className="gradient-text" style={{ display: 'inline-block' }}>Products</h2>
+            <p className="text-secondary mt-2" style={{ maxWidth: '500px', margin: '12px auto 0' }}>
+              Institutional-grade analytics with zero-knowledge privacy
+            </p>
+          </div>
+
+          <div className="grid-3" style={{ marginTop: '48px', maxWidth: '1100px', margin: '48px auto 0' }}>
+            {/* Credit Scoring */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('credit')}>
+              <div className="product-icon-wrap" style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(59,130,246,0.15))', border: '1px solid rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconShieldCheck size={28} color="#22c55e" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Credit Scoring</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                AI-powered credit score from 300-850 with confidence levels.
+                Your income, debt, and history are encrypted end-to-end.
+              </p>
+              <div className="flex gap-2">
+                <span className="badge badge-accent">FHE</span>
+                <span className="badge badge-info">Hermes AI</span>
+                <span className="badge badge-success">Live</span>
+              </div>
+            </div>
+
+            {/* Trading Signals */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('trading')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.15))', border: '1px solid rgba(245,158,11,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconBarChart size={28} color="#f59e0b" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Trading Signals</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                BUY/SELL/HOLD signals with strength and risk assessment.
+                Your positions and stop losses stay fully private.
+              </p>
+              <div className="flex gap-2">
+                <span className="badge badge-accent">FHE</span>
+                <span className="badge badge-info">Hermes AI</span>
+                <span className="badge badge-success">Live</span>
+              </div>
+            </div>
+
+            {/* Encrypted Research */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('research')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(0,212,255,0.15), rgba(192,132,252,0.15))', border: '1px solid rgba(0,212,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconSearch size={28} color="#00d4ff" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Encrypted Research</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                Ask anything — BTC price, market analysis, protocol research.
+                Your queries are encrypted via FHE before reaching the AI.
+              </p>
+              <div className="flex gap-2">
+                <span className="badge badge-accent">FHE</span>
+                <span className="badge badge-info">Hermes AI</span>
+                <span className="badge badge-warning">New</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Tech Stack */}
+      <section className="section">
+        <div className="container text-center">
+          <p className="text-secondary text-sm mb-4" style={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}>Built with</p>
+          <div className="flex items-center justify-center gap-8" style={{ flexWrap: 'wrap', opacity: 0.6 }}>
+            {['Fhenix CoFHE', 'Nous Hermes AI', 'Arbitrum', 'Solidity', 'React', 'Hardhat'].map(tech => (
+              <span key={tech} className="font-mono text-sm" style={{ color: 'var(--cm-text-tertiary)' }}>{tech}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer style={{ padding: '32px 0', borderTop: '1px solid var(--cm-border)', textAlign: 'center' }}>
+        <div className="container">
+          <p className="text-xs text-muted">
+            &copy; 2026 CipherMind AI — Privacy-first intelligence powered by FHE
+          </p>
+        </div>
+      </footer>
+    </main>
+  );
+}
+
+// ── Credit Score Page ────────────────────────────────────────────────
+
+interface CreditPageProps {
+  isConnected: boolean;
+  onConnect: () => void;
+  credit: ReturnType<typeof useCredit>;
+}
+
+function CreditPage({ isConnected, onConnect, credit }: CreditPageProps) {
+  const isProcessing = credit.state !== 'idle' && credit.state !== 'complete' && credit.state !== 'error';
+
+  return (
+    <div className="dashboard">
+      <div className="container">
+        <div className="dashboard-header">
+          <div className="flex items-center gap-3">
+            <div className="feature-icon" style={{ marginBottom: 0 }}><IconShieldCheck size={22} color="var(--cm-accent-1)" /></div>
+            <div>
+              <h1 style={{ fontSize: '1.5rem' }}>Credit Score Analysis</h1>
+              <p className="text-secondary text-sm">FHE-encrypted credit scoring powered by Nous Hermes AI</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="dashboard-content">
+          {!isConnected ? (
+            <div className="card text-center" style={{ padding: '60px 24px', maxWidth: '500px', margin: '0 auto' }}>
+              <div style={{ margin: '0 auto 16px', width: '64px', height: '64px', borderRadius: '50%', background: 'var(--cm-gradient-brand-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <IconLock size={28} color="var(--cm-accent-1)" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Connect Your Wallet</h3>
+              <p className="text-secondary" style={{ marginBottom: '24px', lineHeight: 1.6 }}>
+                Connect your wallet to start the FHE-encrypted credit scoring process.
+                Your data never leaves your device unencrypted.
+              </p>
+              <button className="btn btn-primary btn-lg" onClick={onConnect} id="connect-credit">
+                <IconWallet size={18} /> Connect Wallet
+              </button>
+            </div>
+          ) : (
+            <div className="grid-2" style={{ maxWidth: '1000px', margin: '0 auto', alignItems: 'start' }}>
+              <div>
+                <div className="card" style={{ marginBottom: '16px' }}>
+                  <h3 style={{ marginBottom: '20px' }}>
+                    {credit.state === 'idle' ? 'Enter Financial Data' : 'Processing...'}
+                  </h3>
+                  <CreditForm onSubmit={(data) => credit.submitProfile(data)} disabled={isProcessing} />
+                </div>
+                {credit.error && (
+                  <div className="card" style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'var(--cm-danger-bg)' }}>
+                    <div className="flex items-center gap-2">
+                      <IconAlertCircle size={16} color="var(--cm-danger)" />
+                      <p className="text-sm" style={{ color: 'var(--cm-danger)' }}>{credit.error}</p>
+                    </div>
+                    <button className="btn btn-ghost btn-sm mt-2" onClick={credit.reset}>Try Again</button>
+                  </div>
+                )}
+              </div>
+              <div>
+                {isProcessing && <EncryptAnimation isActive={isProcessing} progress={credit.progress} currentStep={credit.currentStep} />}
+                {credit.state === 'complete' && credit.result && (
+                  <div>
+                    <CreditScoreResult score={credit.result.score} confidence={credit.result.confidence} status={credit.result.status} />
+                    <button className="btn btn-secondary w-full mt-4" onClick={credit.reset} id="reset-credit">
+                      <IconRefresh size={16} /> Run Another Analysis
+                    </button>
+                  </div>
+                )}
+                {credit.state === 'idle' && (
+                  <div className="card text-center" style={{ padding: '48px 24px' }}>
+                    <div style={{ margin: '0 auto 16px', opacity: 0.3 }}><IconShield size={48} /></div>
+                    <p className="text-secondary" style={{ lineHeight: 1.6 }}>
+                      Fill in your financial data on the left and click <strong>"Encrypt & Analyze"</strong> to
+                      receive your AI-powered, privacy-preserving credit score.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Trading Signals Page ─────────────────────────────────────────────
+
+interface TradingPageProps {
+  isConnected: boolean;
+  onConnect: () => void;
+  trading: ReturnType<typeof useTrading>;
+}
+
+function TradingPage({ isConnected, onConnect, trading }: TradingPageProps) {
+  const isProcessing = trading.state !== 'idle' && trading.state !== 'complete' && trading.state !== 'error';
+
+  return (
+    <div className="dashboard">
+      <div className="container">
+        <div className="dashboard-header">
+          <div className="flex items-center gap-3">
+            <div className="feature-icon" style={{ marginBottom: 0 }}><IconBarChart size={22} color="var(--cm-accent-2)" /></div>
+            <div>
+              <h1 style={{ fontSize: '1.5rem' }}>Trading Signal Generator</h1>
+              <p className="text-secondary text-sm">FHE-encrypted trading signals powered by Nous Hermes AI</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="dashboard-content">
+          {!isConnected ? (
+            <div className="card text-center" style={{ padding: '60px 24px', maxWidth: '500px', margin: '0 auto' }}>
+              <div style={{ margin: '0 auto 16px', width: '64px', height: '64px', borderRadius: '50%', background: 'var(--cm-gradient-brand-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <IconBarChart size={28} color="var(--cm-accent-2)" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Connect Your Wallet</h3>
+              <p className="text-secondary" style={{ marginBottom: '24px', lineHeight: 1.6 }}>
+                Connect your wallet to generate privacy-preserving trading signals.
+                Your position data is encrypted using Fully Homomorphic Encryption.
+              </p>
+              <button className="btn btn-primary btn-lg" onClick={onConnect} id="connect-trading">
+                <IconWallet size={18} /> Connect Wallet
+              </button>
+            </div>
+          ) : (
+            <div className="grid-2" style={{ maxWidth: '1000px', margin: '0 auto', alignItems: 'start' }}>
+              <div>
+                <div className="card" style={{ marginBottom: '16px' }}>
+                  <h3 style={{ marginBottom: '20px' }}>
+                    {trading.state === 'idle' ? 'Enter Position Data' : 'Processing...'}
+                  </h3>
+                  <TradingForm onSubmit={(data) => trading.submitPosition(data)} disabled={isProcessing} />
+                </div>
+                {trading.error && (
+                  <div className="card" style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'var(--cm-danger-bg)' }}>
+                    <div className="flex items-center gap-2">
+                      <IconAlertCircle size={16} color="var(--cm-danger)" />
+                      <p className="text-sm" style={{ color: 'var(--cm-danger)' }}>{trading.error}</p>
+                    </div>
+                    <button className="btn btn-ghost btn-sm mt-2" onClick={trading.reset}>Try Again</button>
+                  </div>
+                )}
+              </div>
+              <div>
+                {isProcessing && <EncryptAnimation isActive={isProcessing} progress={trading.progress} currentStep={trading.currentStep} />}
+                {trading.state === 'complete' && trading.result && (
+                  <div>
+                    <TradingSignalResult direction={trading.result.direction} strength={trading.result.strength} riskLevel={trading.result.riskLevel} suggestedEntry={trading.result.suggestedEntry} />
+                    <button className="btn btn-secondary w-full mt-4" onClick={trading.reset} id="reset-trading">
+                      <IconRefresh size={16} /> Generate Another Signal
+                    </button>
+                  </div>
+                )}
+                {trading.state === 'idle' && (
+                  <div className="card text-center" style={{ padding: '48px 24px' }}>
+                    <div style={{ margin: '0 auto 16px', opacity: 0.3 }}><IconTrendingUp size={48} /></div>
+                    <p className="text-secondary" style={{ lineHeight: 1.6 }}>
+                      Enter your trading position on the left and click <strong>"Encrypt & Generate Signal"</strong> to
+                      receive AI-powered BUY/SELL/HOLD signals with risk analysis.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Research Page ────────────────────────────────────────────────────
+
+interface ResearchPageProps {
+  isConnected: boolean;
+  onConnect: () => void;
+  research: ReturnType<typeof useResearch>;
+}
+
+function ResearchPage({ isConnected, onConnect, research }: ResearchPageProps) {
+  const [prompt, setPrompt] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isProcessing = research.state !== 'idle' && research.state !== 'complete' && research.state !== 'error';
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (prompt.trim() && !isProcessing) {
+      research.submitQuery(prompt.trim());
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
+  const suggestions = [
+    "What's the current price of BTC?",
+    "Explain Fully Homomorphic Encryption",
+    "Compare ETH vs SOL for DeFi",
+    "What are the risks of yield farming?",
+  ];
+
+  return (
+    <div className="dashboard">
+      <div className="container">
+        <div className="dashboard-header">
+          <div className="flex items-center gap-3">
+            <div className="feature-icon" style={{ marginBottom: 0, background: 'linear-gradient(135deg, rgba(0,212,255,0.15), rgba(192,132,252,0.15))', borderColor: 'rgba(0,212,255,0.2)' }}>
+              <IconSearch size={22} color="var(--cm-accent-1)" />
+            </div>
+            <div>
+              <h1 style={{ fontSize: '1.5rem' }}>Encrypted Research</h1>
+              <p className="text-secondary text-sm">Privacy-preserving AI research powered by Nous Hermes AI via FHE</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="dashboard-content">
+          {!isConnected ? (
+            <div className="card text-center" style={{ padding: '60px 24px', maxWidth: '500px', margin: '0 auto' }}>
+              <div style={{ margin: '0 auto 16px', width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, rgba(0,212,255,0.15), rgba(192,132,252,0.15))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <IconSearch size={28} color="var(--cm-accent-1)" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Connect Your Wallet</h3>
+              <p className="text-secondary" style={{ marginBottom: '24px', lineHeight: 1.6 }}>
+                Connect your wallet to access encrypted AI research.
+                Your queries are encrypted using FHE before reaching the AI.
+              </p>
+              <button className="btn btn-primary btn-lg" onClick={onConnect} id="connect-research">
+                <IconWallet size={18} /> Connect Wallet
+              </button>
+            </div>
+          ) : (
+            <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+              {/* Query Input */}
+              <div className="card" style={{ marginBottom: '24px' }}>
+                <form onSubmit={handleSubmit}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <IconZap size={16} color="var(--cm-accent-1)" />
+                    <span className="text-sm" style={{ fontWeight: 600 }}>Ask anything — your query is encrypted via FHE</span>
+                  </div>
+
+                  <div style={{ position: 'relative' }}>
+                    <textarea
+                      ref={textareaRef}
+                      id="research-prompt"
+                      className="form-input"
+                      style={{ width: '100%', minHeight: '80px', resize: 'vertical', paddingRight: '56px', fontFamily: 'var(--cm-font-sans)' }}
+                      placeholder="e.g. What's the current price of BTC? / Explain yield farming risks / Compare L2 solutions..."
+                      value={prompt}
+                      onChange={e => setPrompt(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      disabled={isProcessing}
+                    />
+                    <button
+                      type="submit"
+                      className="btn btn-primary btn-icon"
+                      disabled={isProcessing || !prompt.trim()}
+                      id="submit-research"
+                      style={{ position: 'absolute', right: '8px', bottom: '8px' }}
+                    >
+                      <IconSend size={18} />
+                    </button>
+                  </div>
+
+                  {/* Suggestion chips */}
+                  {research.state === 'idle' && !research.result && (
+                    <div className="flex gap-2 mt-4" style={{ flexWrap: 'wrap' }}>
+                      {suggestions.map((s, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          style={{ fontSize: '0.75rem', padding: '6px 12px', border: '1px solid var(--cm-border)', borderRadius: '20px' }}
+                          onClick={() => { setPrompt(s); textareaRef.current?.focus(); }}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 mt-4">
+                    <IconLock size={13} color="var(--cm-accent-1)" />
+                    <span className="text-xs text-secondary">
+                      End-to-end encrypted. Your query is encrypted on-device before transmission to Nous Hermes AI.
+                    </span>
+                  </div>
+                </form>
+              </div>
+
+              {/* Processing Animation */}
+              {isProcessing && (
+                <EncryptAnimation isActive={isProcessing} progress={research.progress} currentStep={research.currentStep} />
+              )}
+
+              {/* Research Result */}
+              {research.state === 'complete' && research.result && (
+                <div className="card animate-slide-up" id="research-result">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="badge badge-success">
+                      <IconShieldCheck size={12} /> Encrypted Response Unsealed
+                    </div>
+                    <span className="text-xs font-mono text-muted">
+                      {research.result.model}
+                    </span>
+                  </div>
+
+                  {/* Query Echo */}
+                  <div style={{ padding: '12px 16px', background: 'var(--cm-bg-secondary)', borderRadius: 'var(--cm-radius-md)', border: '1px solid var(--cm-border)', marginBottom: '20px' }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <IconEye size={13} color="var(--cm-text-tertiary)" />
+                      <span className="text-xs text-muted" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>Your Query</span>
+                    </div>
+                    <p className="text-sm" style={{ color: 'var(--cm-text-secondary)' }}>{research.query}</p>
+                  </div>
+
+                  {/* AI Response */}
+                  <div className="research-response" style={{ lineHeight: 1.8, whiteSpace: 'pre-wrap', fontSize: '0.9375rem' }}>
+                    {research.result.answer.split('\n').map((line, i) => {
+                      if (line.startsWith('**') && line.endsWith('**')) {
+                        return <h4 key={i} style={{ marginTop: i > 0 ? '16px' : 0, marginBottom: '8px', color: 'var(--cm-accent-1)' }}>{line.replace(/\*\*/g, '')}</h4>;
+                      }
+                      if (line.startsWith('- ')) {
+                        return <div key={i} className="flex gap-2" style={{ marginLeft: '8px', marginBottom: '4px' }}>
+                          <span style={{ color: 'var(--cm-accent-2)', flexShrink: 0 }}>&bull;</span>
+                          <span className="text-secondary">{line.slice(2)}</span>
+                        </div>;
+                      }
+                      if (line.trim() === '') return <br key={i} />;
+                      return <p key={i} className="text-secondary" style={{ marginBottom: '4px' }}>{line}</p>;
+                    })}
+                  </div>
+
+                  {/* Encryption attestation */}
+                  <div style={{ marginTop: '24px', padding: '12px', borderRadius: 'var(--cm-radius-sm)', background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.1)' }}>
+                    <div className="flex items-center gap-2 text-xs text-secondary" style={{ lineHeight: 1.5 }}>
+                      <IconLock size={13} color="var(--cm-accent-1)" />
+                      <span>This response was transmitted through an FHE-encrypted channel. Your query remained private throughout.</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3 mt-4">
+                    <button className="btn btn-secondary" onClick={() => { research.reset(); setPrompt(''); }} id="reset-research" style={{ flex: 1 }}>
+                      <IconRefresh size={16} /> New Query
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Error */}
+              {research.state === 'error' && (
+                <div className="card" style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'var(--cm-danger-bg)' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <IconAlertCircle size={16} color="var(--cm-danger)" />
+                    <p className="text-sm" style={{ color: 'var(--cm-danger)', fontWeight: 600 }}>Research Query Failed</p>
+                  </div>
+                  <p className="text-xs text-secondary">{research.error}</p>
+                  <button className="btn btn-ghost btn-sm mt-4" onClick={research.reset}>Try Again</button>
+                </div>
+              )}
+
+              {/* History */}
+              {research.history.length > 0 && research.state !== 'complete' && (
+                <div style={{ marginTop: '32px' }}>
+                  <h4 className="text-sm text-muted mb-4" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Recent Queries
+                  </h4>
+                  <div className="flex flex-col gap-3">
+                    {research.history.slice(0, 5).map((item, i) => (
+                      <div key={i} className="card" style={{ padding: '16px', cursor: 'pointer' }} onClick={() => { setPrompt(item.prompt); }}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2" style={{ flex: 1, minWidth: 0 }}>
+                            <IconSearch size={14} color="var(--cm-text-tertiary)" />
+                            <span className="text-sm" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.prompt}</span>
+                          </div>
+                          <span className="text-xs font-mono text-muted" style={{ flexShrink: 0, marginLeft: '12px' }}>
+                            {new Date(item.result.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default App;

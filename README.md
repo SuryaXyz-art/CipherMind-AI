@@ -1,239 +1,88 @@
-# Fhenix CoFHE Hardhat Starter
+# 🧠 CipherMind AI
 
-This project is a starter repository for developing FHE (Fully Homomorphic Encryption) smart contracts on the Fhenix network using CoFHE (Confidential Computing Framework for Homomorphic Encryption).
+> **Privacy-First AI Intelligence Powered by Fhenix CoFHE & Nous Hermes AI**
 
-## Prerequisites
+CipherMind AI is an advanced, privacy-preserving AI analytics platform that delivers institutional-grade financial intelligence—such as credit scoring, trading signals, and deep market research—without ever exposing your raw data.
 
-- Node.js (v18 or later)
-- pnpm (recommended package manager)
+By combining the cryptographic guarantees of **Fully Homomorphic Encryption (FHE)** via the Fhenix protocol with the reasoning capabilities of **Nous Hermes AI**, CipherMind ensures that your numbers stay encrypted. Always.
 
-## Installation
+---
 
-1. Clone the repository:
+## ✨ Features
+
+- **🛡️ 100% Zero-Knowledge Privacy:** Your data never leaves your device unencrypted. All processing occurs on ciphertext.
+- **📊 FHE Credit Scoring:** Calculate AI-powered credit scores dynamically based on your income and history, completely anonymously.
+- **📈 Trading Signal Generator:** Generate Buy/Sell/Hold signals with confidence levels derived from your private portfolio data.
+- **🔍 Encrypted Research AI:** Ask questions directly to Nous Hermes 4 (70B) over an encrypted channel. The queries are sealed, processed via off-chain oracle matching, and unsealed safely in your browser.
+- **⚡ CoFHE Integration:** Employs Coprocessor FHE (CoFHE) to handle intense homomorphic computations effectively on Arbitrum Sepolia.
+
+---
+
+## 🏗️ Architecture Stack
+
+1. **Frontend**: Vite + React 19 + TypeScript + Modern CSS
+   - Provides smooth, client-side encryption of user inputs.
+   - Decrypts off-chain oracle responses securely using the user's private key.
+2. **Smart Contracts**: Solidity + Fhenix (`@fhenixprotocol/contracts`)
+   - `CipherMindCredit.sol`: Handles encrypted credit limit and income data natively on-chain.
+   - `CipherMindTrading.sol`: Handles encrypted positions and entry markers.
+3. **Off-Chain Oracle (Backend)**: TypeScript + Node.js
+   - Listens to FHE events on Arbitrum Sepolia.
+   - Pipes the *anonymized general query* to the **Nous Research API** natively.
+   - Re-encrypts the AI's JSON output back onto the chain.
+4. **AI Inference**: Nous Research (Native Inference API)
+   - Powered by `Hermes-4-70B`.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Requirements
+- Node.js >= 18
+- A Metamask / Web3 Wallet configured to **Arbitrum Sepolia Testnet**
+- A native API key from [Nous Research Portal](https://portal.nousresearch.com)
+
+### 2. Configure Environment
+
+Rename `.env.example` to `.env` in the root folder, and fill in your keys:
+
+```env
+PRIVATE_KEY=your_wallet_private_key
+NOUS_API_KEY=sk-cn... # Your native Nous Research Key
+NOUS_API_BASE_URL=https://inference-api.nousresearch.com/v1
+NOUS_MODEL=nousresearch/hermes-4-70b
+```
+
+Inside the `frontend/` folder, create another `.env` file for Vite:
+
+```env
+VITE_NOUS_API_KEY=your_nous_key
+VITE_NOUS_API_BASE_URL=https://inference-api.nousresearch.com/v1
+VITE_NOUS_MODEL=nousresearch/hermes-4-70b
+```
+
+### 3. Installation & Run
+
+Install dependencies for both the project root and frontend:
 
 ```bash
-git clone https://github.com/fhenixprotocol/cofhe-hardhat-starter.git
-cd cofhe-hardhat-starter
+# Install hardhat/contracts/backend dependencies
+npm install
+
+# Install frontend dependencies
+cd frontend
+npm install
+
+# Run the frontend natively
+npm run dev
 ```
 
-2. Install dependencies:
+Visit `http://localhost:5173` to interact with the CipherMind Dashboard!
 
-```bash
-pnpm install
-```
+---
 
-3. Configure environment variables:
+## 🔐 Security Notice
+This is a demonstration of Homomorphic Encryption merged with LLMs. Please do not submit real Social Security Numbers or extremely sensitive real-life banking keys on testnets.
 
-```bash
-cp .env.example .env
-# Edit .env with your private key and RPC URLs for testnet usage
-```
-
-## Available Scripts
-
-### Development
-
-- `pnpm compile` - Compile the smart contracts
-- `pnpm clean` - Clean the project artifacts
-- `pnpm test` - Run tests on the Hardhat network (mock FHE)
-
-### Local CoFHE Network
-
-- `pnpm localcofhe:start` - Start a local CoFHE network
-- `pnpm localcofhe:stop` - Stop the local CoFHE network
-- `pnpm localcofhe:test` - Run tests on the local CoFHE network
-- `pnpm localcofhe:faucet` - Get test tokens from the faucet
-- `pnpm localcofhe:deploy` - Deploy contracts to the local CoFHE network
-
-### Testnet Deployment & Interaction
-
-Each supported testnet has deploy, increment, and reset tasks:
-
-**Ethereum Sepolia:**
-- `pnpm eth-sepolia:deploy-counter` - Deploy the Counter contract
-- `pnpm eth-sepolia:increment-counter` - Increment the counter
-- `pnpm eth-sepolia:reset-counter` - Reset the counter with an encrypted value
-
-**Arbitrum Sepolia:**
-- `pnpm arb-sepolia:deploy-counter` - Deploy the Counter contract
-- `pnpm arb-sepolia:increment-counter` - Increment the counter
-- `pnpm arb-sepolia:reset-counter` - Reset the counter with an encrypted value
-
-**Base Sepolia:**
-- `pnpm base-sepolia:deploy-counter` - Deploy the Counter contract
-- `pnpm base-sepolia:increment-counter` - Increment the counter
-- `pnpm base-sepolia:reset-counter` - Reset the counter with an encrypted value
-
-## Project Structure
-
-- `contracts/` - Smart contract source files
-  - `Counter.sol` - Example FHE counter contract with increment, decrement, reset, and on-chain decryption
-- `test/` - Test files
-- `tasks/` - Hardhat task files
-  - `deploy-counter.ts` - Deploy the Counter contract
-  - `increment-counter.ts` - Increment and read the counter
-  - `reset-counter.ts` - Reset the counter with an encrypted input
-  - `utils.ts` - Shared utilities (deployment tracking, CoFHE client creation)
-
-## `@cofhe/sdk` and `@cofhe/hardhat-plugin`
-
-This project uses `@cofhe/sdk` and the `@cofhe/hardhat-plugin` to interact with FHE (Fully Homomorphic Encryption) smart contracts. Here are the key features and utilities:
-
-### `@cofhe/sdk` Features
-
-- **Encryption**: Encrypt values before sending them to FHE contracts
-
-  ```typescript
-  import { Encryptable, FheTypes } from '@cofhe/sdk'
-
-  // Encrypt an input value
-  const encrypted = await client
-    .encryptInputs([Encryptable.uint32(2000n)])
-    .execute()
-  ```
-
-- **Decryption (off-chain view)**: Decrypt ciphertext handles for reading values off-chain
-
-  ```typescript
-  // Decrypt a ciphertext handle (off-chain, read-only)
-  const decrypted = await client
-    .decryptForView(ciphertextHandle, FheTypes.Uint32)
-    .execute()
-  ```
-
-- **Decryption (on-chain publish)**: 3-step flow to decrypt and publish results on-chain
-
-  ```typescript
-  // Step 1: Grant public decryption permission (on-chain)
-  await contract.allowCounterPublicly() // calls FHE.allowPublic(ctHash)
-
-  // Step 2: Decrypt off-chain via the SDK (returns plaintext + Threshold Network signature)
-  const result = await client
-    .decryptForTx(ctHash)
-    .withoutPermit()
-    .execute()
-
-  // Step 3: Submit the verified plaintext + signature back on-chain
-  await contract.revealCounter(result.decryptedValue, result.signature)
-  // calls FHE.publishDecryptResult(ctHash, plaintext, signature)
-  ```
-
-- **Permits**: Create and validate permits for secure contract interactions
-  ```typescript
-  import { PermitUtils } from '@cofhe/sdk/permits'
-
-  // Create a self-permit
-  const permit = await client.permits.createSelf({
-    issuer: signer.address,
-    name: 'My Permit',
-  })
-
-  // Validate a permit on-chain
-  const isValid = await PermitUtils.checkValidityOnChain(
-    permit,
-    client.getSnapshot().publicClient!,
-  )
-  ```
-
-### `@cofhe/hardhat-plugin` Features
-
-- **Network Configuration**: Automatically configures CoFHE-enabled networks (`localcofhe`, `eth-sepolia`, `arb-sepolia`)
-- **CoFHE SDK Integration**: Provides `hre.cofhe` with helpers for creating SDK clients
-
-  ```typescript
-  // Create a batteries-included client (handles mock setup automatically)
-  const client = await hre.cofhe.createClientWithBatteries(signer)
-  ```
-
-- **Signer Adapter**: Convert Hardhat signers into CoFHE-compatible clients
-
-  ```typescript
-  const { publicClient, walletClient } = await hre.cofhe.hardhatSignerAdapter(signer)
-  ```
-
-- **Mock Testing Utilities**: Helper functions for testing FHE contracts in mock mode
-
-  ```typescript
-  // Log all FHE operations within a block
-  await hre.cofhe.mocks.withLogs('counter.increment()', async () => {
-    await counter.connect(bob).increment()
-  })
-
-  // Assert on the plaintext behind a ciphertext hash
-  await hre.cofhe.mocks.expectPlaintext(countHash, 2n)
-
-  // Get the plaintext value directly
-  const plaintext = await hre.cofhe.mocks.getPlaintext(await counter.count())
-  ```
-
-### Environment Configuration
-
-The plugin supports different environments:
-
-- `MOCK`: For testing with mocked FHE operations on the Hardhat network
-- `LOCAL`: For testing with a local CoFHE network
-- `TESTNET`: For deploying and interacting on `eth-sepolia`, `arb-sepolia`, and `base-sepolia`
-
-You can check the current environment using the chain configuration:
-
-```typescript
-import { getChainById } from '@cofhe/sdk/chains'
-
-const chainId = Number((await signer.provider.getNetwork()).chainId)
-const chain = getChainById(chainId)
-
-if (chain.environment === 'MOCK') {
-  // Use batteries-included client for mock mode
-}
-```
-
-## Links and Additional Resources
-
-### `@cofhe/sdk`
-
-`@cofhe/sdk` is the JavaScript/TypeScript SDK for interacting with FHE smart contracts. It provides a client-based API for encryption, decryption, and permit management.
-
-#### Key Features
-
-- Encryption of data before sending to FHE contracts
-- Decryption of ciphertext handles from contracts
-- Managing permits for secure contract interactions
-- Chain configuration and environment detection
-- Integration with Web3 libraries (ethers.js and viem)
-
-### `@cofhe/mock-contracts`
-
-`@cofhe/mock-contracts` provides mock implementations of CoFHE contracts for testing FHE functionality without the actual coprocessor.
-
-#### Features
-
-- Mock implementations of core CoFHE contracts:
-  - MockTaskManager
-  - MockACL (Access Control List)
-  - MockThresholdNetwork
-  - MockZkVerifier
-  - TestBed
-- Synchronous operation simulation with mock delays
-- On-chain access to unencrypted values for testing
-
-#### Integration with Hardhat and `@cofhe/sdk`
-
-Both `@cofhe/sdk` and `@cofhe/hardhat-plugin` interact directly with the mock contracts:
-
-- When imported in `hardhat.config.ts`, `@cofhe/hardhat-plugin` injects necessary mock contracts into the Hardhat testnet
-- `@cofhe/sdk` automatically detects mock contracts and adjusts behavior for test environments
-
-#### Mock Behavior Differences
-
-- **Symbolic Execution**: In mocks, ciphertext hashes point to plaintext values stored on-chain
-- **On-chain Decryption**: Mock decryption uses `FHE.publishDecryptResult()` with mock Threshold Network signatures
-- **ZK Verification**: Mock verifier handles on-chain storage of encrypted inputs
-- **Off-chain Decryption**: When using `client.decryptForView()`, mocks return plaintext values directly from on-chain storage
-
-## License
-
-MIT
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+---
+*Built for the Agentic Commerce Ecosystem & The CoFHE Infrastructure*

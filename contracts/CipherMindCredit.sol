@@ -1,0 +1,198 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import "@fhenixprotocol/cofhe-contracts/FHE.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+/**
+ * @title CipherMindCredit
+ * @notice FHE-enabled credit scoring contract for CipherMind AI.
+ * @dev Users submit encrypted financial features (income, debt, history length, etc.)
+ *      which are processed entirely under FHE. An off-chain oracle (listening to events)
+ *      calls Nous Hermes AI on anonymized feature bands and writes the encrypted
+ *      credit score back on-chain.
+ */
+contract CipherMindCredit is Ownable {
+    // ── Encrypted user data ──────────────────────────────────────────────
+    struct EncryptedProfile {
+        euint32 income;          // Annual income (encrypted)
+        euint32 debtRatio;       // Debt-to-income ratio × 100 (encrypted)
+        euint32 historyMonths;   // Credit history length in months (encrypted)
+        euint32 openAccounts;    // Number of open accounts (encrypted)
+        bool    submitted;
+    }
+
+    // ── Encrypted results ────────────────────────────────────────────────
+    struct CreditResult {
+        euint32 score;           // 300-850 range (encrypted)
+        euint32 confidence;      // 0-100 confidence level (encrypted)
+        bool    fulfilled;
+    }
+
+    // ── State ────────────────────────────────────────────────────────────
+    mapping(address => EncryptedProfile) public profiles;
+    mapping(address => CreditResult)     public results;
+    mapping(address => uint256)          public requestTimestamps;
+
+    address public oracle;
+    uint256 public requestCount;
+
+    // ── FHE constants ────────────────────────────────────────────────────
+    euint32 public SCORE_FLOOR;     // 300
+    euint32 public SCORE_CEILING;   // 850
+
+    // ── Events ───────────────────────────────────────────────────────────
+    event CreditRequested(address indexed user, uint256 requestId);
+    event CreditFulfilled(address indexed user, uint256 requestId);
+    event OracleUpdated(address indexed oldOracle, address indexed newOracle);
+
+    // ── Errors ───────────────────────────────────────────────────────────
+    error NotOracle();
+    error ProfileNotSubmitted();
+    error ResultNotReady();
+
+    modifier onlyOracle() {
+        if (msg.sender != oracle) revert NotOracle();
+        _;
+    }
+
+    constructor(address _oracle) Ownable(msg.sender) {
+        oracle = _oracle;
+
+        SCORE_FLOOR   = FHE.asEuint32(300);
+        SCORE_CEILING = FHE.asEuint32(850);
+
+        FHE.allowThis(SCORE_FLOOR);
+        FHE.allowThis(SCORE_CEILING);
+    }
+
+    // ── User-facing ──────────────────────────────────────────────────────
+
+    /**
+     * @notice Submit encrypted financial profile for credit scoring.
+     * @param _income        Encrypted annual income
+     * @param _debtRatio     Encrypted debt-to-income ratio × 100
+     * @param _historyMonths Encrypted credit history months
+     * @param _openAccounts  Encrypted open account count
+     */
+    function submitProfile(
+        InEuint32 memory _income,
+        InEuint32 memory _debtRatio,
+        InEuint32 memory _historyMonths,
+        InEuint32 memory _openAccounts
+    ) external {
+        euint32 income        = FHE.asEuint32(_income);
+        euint32 debtRatio     = FHE.asEuint32(_debtRatio);
+        euint32 historyMonths = FHE.asEuint32(_historyMonths);
+        euint32 openAccounts  = FHE.asEuint32(_openAccounts);
+
+        // Allow this contract to operate on the ciphertexts
+        FHE.allowThis(income);
+        FHE.allowThis(debtRatio);
+        FHE.allowThis(historyMonths);
+        FHE.allowThis(openAccounts);
+
+        // Allow the sender to view their data
+        FHE.allowSender(income);
+        FHE.allowSender(debtRatio);
+        FHE.allowSender(historyMonths);
+        FHE.allowSender(openAccounts);
+
+        profiles[msg.sender] = EncryptedProfile({
+            income:        income,
+            debtRatio:     debtRatio,
+            historyMonths: historyMonths,
+            openAccounts:  openAccounts,
+            submitted:     true
+        });
+
+        requestTimestamps[msg.sender] = block.timestamp;
+        requestCount++;
+
+        emit CreditRequested(msg.sender, requestCount);
+    }
+
+    // ── Oracle-facing ────────────────────────────────────────────────────
+
+    /**
+     * @notice Oracle fulfills a credit score request with encrypted results.
+     * @param _user       Address of the user whose score is being fulfilled
+     * @param _score      Encrypted credit score (300-850)
+     * @param _confidence Encrypted confidence level (0-100)
+     */
+    function fulfillCreditScore(
+        address _user,
+        InEuint32 memory _score,
+        InEuint32 memory _confidence
+    ) external onlyOracle {
+        if (!profiles[_user].submitted) revert ProfileNotSubmitted();
+
+        euint32 score      = FHE.asEuint32(_score);
+        euint32 confidence = FHE.asEuint32(_confidence);
+
+        // Clamp score between floor and ceiling
+        // score = max(SCORE_FLOOR, min(score, SCORE_CEILING))
+        ebool tooLow  = FHE.lt(score, SCORE_FLOOR);
+        score = FHE.select(tooLow, SCORE_FLOOR, score);
+
+        ebool tooHigh = FHE.gt(score, SCORE_CEILING);
+        score = FHE.select(tooHigh, SCORE_CEILING, score);
+
+        FHE.allowThis(score);
+        FHE.allowThis(confidence);
+        FHE.allow(score, _user);
+        FHE.allow(confidence, _user);
+
+        results[_user] = CreditResult({
+            score:      score,
+            confidence: confidence,
+            fulfilled:  true
+        });
+
+        emit CreditFulfilled(_user, requestCount);
+    }
+
+    // ── View functions ───────────────────────────────────────────────────
+
+    /**
+     * @notice Allow public decryption of a user's credit score (user calls this).
+     */
+    function allowScorePublicly() external {
+        if (!results[msg.sender].fulfilled) revert ResultNotReady();
+        FHE.allowPublic(results[msg.sender].score);
+        FHE.allowPublic(results[msg.sender].confidence);
+    }
+
+    /**
+     * @notice Publish the decrypted credit score on-chain (3-step flow, step 3).
+     */
+    function revealScore(
+        uint32 scorePlaintext,
+        bytes memory scoreSignature,
+        uint32 confidencePlaintext,
+        bytes memory confidenceSignature
+    ) external {
+        if (!results[msg.sender].fulfilled) revert ResultNotReady();
+        FHE.publishDecryptResult(results[msg.sender].score, scorePlaintext, scoreSignature);
+        FHE.publishDecryptResult(results[msg.sender].confidence, confidencePlaintext, confidenceSignature);
+    }
+
+    /**
+     * @notice Get the decrypted credit score (only available after revealScore).
+     */
+    function getDecryptedScore() external view returns (uint256 score, uint256 confidence) {
+        (uint256 s, bool sDecrypted) = FHE.getDecryptResultSafe(results[msg.sender].score);
+        (uint256 c, bool cDecrypted) = FHE.getDecryptResultSafe(results[msg.sender].confidence);
+
+        if (!sDecrypted || !cDecrypted) revert ResultNotReady();
+
+        return (s, c);
+    }
+
+    // ── Admin ────────────────────────────────────────────────────────────
+
+    function setOracle(address _oracle) external onlyOwner {
+        emit OracleUpdated(oracle, _oracle);
+        oracle = _oracle;
+    }
+}

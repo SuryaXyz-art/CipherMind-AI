@@ -1,3 +1,6 @@
 export * from './deploy-counter'
 export * from './increment-counter'
 export * from './reset-counter'
+export * from './deploy-credit'
+export * from './deploy-trading'
+export * from './deploy-analytics'

@@ -13,15 +13,28 @@ const config: HardhatUserConfig = {
     gasWarning: true,
   },
   solidity: {
-    version: "0.8.28",
+    version: "0.8.25",
     settings: {
       evmVersion: "cancun",
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
     },
   },
   defaultNetwork: "hardhat",
-  // defaultNetwork: 'localcofhe',
   networks: {
     // localcofhe, eth-sepolia, and arb-sepolia are auto-injected by @cofhe/hardhat-plugin
+
+    // Arbitrum Sepolia (primary deployment target)
+    // Note: arb-sepolia is auto-injected but we can override settings here
+    "arb-sepolia-custom": {
+      url: process.env.ARB_SEPOLIA_RPC_URL || "https://sepolia-rollup.arbitrum.io/rpc",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 421614,
+      gasMultiplier: 1.2,
+      timeout: 60000,
+    },
 
     // Base Sepolia testnet configuration (not provided by plugin)
     "base-sepolia": {
