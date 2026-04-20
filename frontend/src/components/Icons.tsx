@@ -3,7 +3,7 @@
  * Replaces all emoji usage with crisp, scalable vector graphics.
  */
 
-import React from 'react';
+
 
 interface IconProps {
   size?: number;

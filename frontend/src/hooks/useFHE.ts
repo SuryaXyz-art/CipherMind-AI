@@ -105,7 +105,7 @@ export function useFHE(): UseFHEReturn {
    * Encrypt a numeric value using FHE.
    * In production: uses CoFHE SDK encryptInputs
    */
-  const encryptValue = useCallback(async (value: number): Promise<Uint8Array | null> => {
+  const encryptValue = useCallback(async (_value: number): Promise<Uint8Array | null> => {
     if (!state.isInitialized) {
       console.error('FHE client not initialized');
       return null;

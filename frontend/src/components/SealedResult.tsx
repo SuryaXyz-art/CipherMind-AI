@@ -3,8 +3,7 @@
  * Professional design with SVG icons instead of emojis.
  */
 
-import React from 'react';
-import { IconCheck, IconShieldCheck, IconTrendingUp, IconTrendingDown, IconMinus, IconLock } from './Icons';
+import { IconCheck, IconTrendingUp, IconTrendingDown, IconMinus, IconLock } from './Icons';
 
 // ── Credit Score Result ────────────────────────────────────────────────
 

@@ -15,8 +15,8 @@ import { EncryptAnimation } from './components/EncryptAnimation';
 import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
 import {
   IconShield, IconShieldCheck, IconLock, IconUnlock, IconLink, IconCpu,
-  IconBarChart, IconTrendingUp, IconWallet, IconSearch, IconSend, IconKey,
-  IconActivity, IconAlertCircle, IconRefresh, IconX, IconGlobe, IconEye, IconZap,
+  IconBarChart, IconTrendingUp, IconWallet, IconSearch, IconSend,
+  IconAlertCircle, IconRefresh, IconEye, IconZap,
 } from './components/Icons';
 
 type Page = 'home' | 'credit' | 'trading' | 'research';

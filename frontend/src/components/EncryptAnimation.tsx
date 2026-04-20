@@ -5,7 +5,7 @@
  * reduce user anxiety while their data is being encrypted locally.
  */
 
-import React, { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 
 interface EncryptAnimationProps {
   isActive: boolean;
