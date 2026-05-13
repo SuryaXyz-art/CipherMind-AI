@@ -1,4 +1,4 @@
-# 🧠 CipherMind AI
+# CipherMind AI
 
 > **Privacy-First AI Intelligence Powered by Fhenix CoFHE & Nous Hermes AI**
 
@@ -8,17 +8,17 @@ By combining the cryptographic guarantees of **Fully Homomorphic Encryption (FHE
 
 ---
 
-## ✨ Features
+## Features
 
-- **🛡️ 100% Zero-Knowledge Privacy:** Your data never leaves your device unencrypted. All processing occurs on ciphertext.
-- **📊 FHE Credit Scoring:** Calculate AI-powered credit scores dynamically based on your income and history, completely anonymously.
-- **📈 Trading Signal Generator:** Generate Buy/Sell/Hold signals with confidence levels derived from your private portfolio data.
-- **🔍 Encrypted Research AI:** Ask questions directly to Nous Hermes 4 (70B) over an encrypted channel. The queries are sealed, processed via off-chain oracle matching, and unsealed safely in your browser.
-- **⚡ CoFHE Integration:** Employs Coprocessor FHE (CoFHE) to handle intense homomorphic computations effectively on Arbitrum Sepolia.
+- ** 100% Zero-Knowledge Privacy:** Your data never leaves your device unencrypted. All processing occurs on ciphertext.
+- ** FHE Credit Scoring:** Calculate AI-powered credit scores dynamically based on your income and history, completely anonymously.
+- ** Trading Signal Generator:** Generate Buy/Sell/Hold signals with confidence levels derived from your private portfolio data.
+- ** Encrypted Research AI:** Ask questions directly to Nous Hermes 4 (70B) over an encrypted channel. The queries are sealed, processed via off-chain oracle matching, and unsealed safely in your browser.
+- ** CoFHE Integration:** Employs Coprocessor FHE (CoFHE) to handle intense homomorphic computations effectively on Arbitrum Sepolia.
 
 ---
 
-## 🏗️ Architecture Stack
+##  Architecture Stack
 
 1. **Frontend**: Vite + React 19 + TypeScript + Modern CSS
    - Provides smooth, client-side encryption of user inputs.
@@ -35,7 +35,7 @@ By combining the cryptographic guarantees of **Fully Homomorphic Encryption (FHE
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### 1. Requirements
 - Node.js >= 18
@@ -81,7 +81,7 @@ Visit `http://localhost:5173` to interact with the CipherMind Dashboard!
 
 ---
 
-## 🔐 Security Notice
+## Security Notice
 This is a demonstration of Homomorphic Encryption merged with LLMs. Please do not submit real Social Security Numbers or extremely sensitive real-life banking keys on testnets.
 
 ---
