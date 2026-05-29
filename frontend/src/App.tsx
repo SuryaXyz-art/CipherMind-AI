@@ -15,6 +15,7 @@ import { usePayroll } from './hooks/usePayroll';
 import { useLending } from './hooks/useLending';
 import { useRequests } from './hooks/useRequests';
 import { useCrowdfund } from './hooks/useCrowdfund';
+import { useEscrow } from './hooks/useEscrow';
 import { CreditForm, TradingForm } from './components/EncryptForm';
 import { EncryptAnimation } from './components/EncryptAnimation';
 import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
@@ -24,7 +25,7 @@ import {
   IconAlertCircle, IconRefresh, IconEye, IconZap,
 } from './components/Icons';
 
-type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'credit' | 'trading' | 'research';
+type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'credit' | 'trading' | 'research';
 
 function useTheme(): ['dark' | 'light', () => void] {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -57,6 +58,7 @@ function App() {
   const lending = useLending();
   const requests = useRequests();
   const crowdfund = useCrowdfund();
+  const escrow = useEscrow();
 
   return (
     <>
@@ -81,6 +83,7 @@ function App() {
               { id: 'lending', label: 'Lending' },
               { id: 'requests', label: 'Requests' },
               { id: 'crowdfund', label: 'Crowdfund' },
+              { id: 'escrow', label: 'Escrow' },
               { id: 'credit', label: 'Credit Score' },
               { id: 'trading', label: 'Trading Signals' },
               { id: 'research', label: 'Research' },
@@ -138,6 +141,7 @@ function App() {
       {page === 'lending' && <LendingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} lending={lending} />}
       {page === 'requests' && <RequestsPage isConnected={fhe.isInitialized} onConnect={fhe.connect} requests={requests} />}
       {page === 'crowdfund' && <CrowdfundPage isConnected={fhe.isInitialized} onConnect={fhe.connect} crowdfund={crowdfund} />}
+      {page === 'escrow' && <EscrowPage isConnected={fhe.isInitialized} onConnect={fhe.connect} escrow={escrow} />}
       {page === 'credit' && <CreditPage isConnected={fhe.isInitialized} onConnect={fhe.connect} credit={credit} />}
       {page === 'trading' && <TradingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} trading={trading} />}
       {page === 'research' && <ResearchPage isConnected={fhe.isInitialized} onConnect={fhe.connect} research={research} />}
@@ -285,6 +289,19 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
                 contribution amount stays private.
               </p>
               <div className="flex gap-2"><span className="badge badge-accent">FHE</span><span className="badge badge-info">Funding</span><span className="badge badge-success">Live</span></div>
+            </div>
+
+            {/* Confidential Escrow */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('escrow')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(0,212,255,0.15))', border: '1px solid rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconShield size={28} color="#22c55e" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Confidential Escrow</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                Two-of-two approval with an arbiter, over a sealed amount. Funds
+                release on agreement; disputes go to the arbiter — no platform rake.
+              </p>
+              <div className="flex gap-2"><span className="badge badge-accent">FHE</span><span className="badge badge-info">Trustless</span><span className="badge badge-success">Live</span></div>
             </div>
 
             {/* Credit Scoring */}
@@ -1180,6 +1197,57 @@ function CrowdfundPage({ isConnected, onConnect, crowdfund }: { isConnected: boo
           </div>
           <Stat label="Raised (encrypted)" value={crowdfund.raised === null ? '████' : `${crowdfund.raised}`} />
           {crowdfund.reached !== null && <p className="text-sm mt-2" style={{ color: crowdfund.reached ? 'var(--cm-success)' : 'var(--cm-text-secondary)' }}>{crowdfund.reached ? '✅ Goal reached' : 'ℹ️ Goal not yet reached'} (total stayed sealed)</p>}
+        </div>
+      </div></div>
+    </div></div>
+  );
+}
+
+// ── Escrow Page ──────────────────────────────────────────────────────────────
+
+function EscrowPage({ isConnected, onConnect, escrow }: { isConnected: boolean; onConnect: () => void; escrow: ReturnType<typeof useEscrow> }) {
+  const [seller, setSeller] = useState('');
+  const [arbiter, setArbiter] = useState('');
+  const [amt, setAmt] = useState('500');
+  const [memo, setMemo] = useState('Design work');
+  const [dealId, setDealId] = useState('0');
+
+  if (!isConnected) return <ConnectGate title="Confidential Escrow" onConnect={onConnect} icon={<IconShield size={28} color="var(--cm-accent-1)" />} />;
+
+  return (
+    <div className="dashboard"><div className="container">
+      <SurfaceHeader icon={<IconShield size={22} color="var(--cm-accent-1)" />} title="Confidential Escrow" subtitle="Buyer funds, both parties approve, funds release — all over a sealed amount. An arbiter resolves disputes." />
+      <div className="dashboard-content"><div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <h3 style={{ marginBottom: '8px' }}>Open a deal (as buyer)</h3>
+          <p className="text-secondary text-sm" style={{ marginBottom: '12px' }}>The memo is public; the amount is encrypted and visible only to the three parties.</p>
+          <input className="form-input" value={seller} onChange={e => setSeller(e.target.value)} placeholder="0x seller" style={{ width: '100%', fontFamily: 'var(--cm-font-mono)', fontSize: '0.8rem', marginBottom: '8px' }} />
+          <input className="form-input" value={arbiter} onChange={e => setArbiter(e.target.value)} placeholder="0x arbiter" style={{ width: '100%', fontFamily: 'var(--cm-font-mono)', fontSize: '0.8rem', marginBottom: '8px' }} />
+          <input className="form-input" value={memo} onChange={e => setMemo(e.target.value)} placeholder="Memo" style={{ width: '100%', marginBottom: '8px' }} />
+          <div className="flex items-center gap-2">
+            <input className="form-input" type="number" value={amt} onChange={e => setAmt(e.target.value)} style={{ maxWidth: '120px' }} />
+            <button className="btn btn-primary btn-sm" onClick={() => escrow.openDeal(seller.trim(), arbiter.trim(), Number(amt), memo)} disabled={escrow.open.loading || !seller.trim() || !arbiter.trim()}>{escrow.open.loading ? '…' : 'Open deal'}</button>
+          </div>
+          {escrow.open.message && <p className="text-xs mt-2" style={{ color: 'var(--cm-success)' }}>{escrow.open.message}</p>}
+          {escrow.open.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{escrow.open.error}</p>}
+        </div>
+        <div className="grid-2" style={{ alignItems: 'start' }}>
+          <div className="card">
+            <h4 style={{ marginBottom: '8px' }}>Act on a deal</h4>
+            <input className="form-input" value={dealId} onChange={e => setDealId(e.target.value)} placeholder="Deal ID" style={{ width: '100%', marginBottom: '8px' }} />
+            <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
+              <button className="btn btn-primary btn-sm" onClick={() => escrow.approve(Number(dealId))} disabled={escrow.action.loading}>Approve</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => escrow.resolve(Number(dealId), true)} disabled={escrow.action.loading}>Arbiter: release</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => escrow.resolve(Number(dealId), false)} disabled={escrow.action.loading}>Arbiter: refund</button>
+            </div>
+            {escrow.action.message && <p className="text-xs mt-2" style={{ color: 'var(--cm-success)' }}>{escrow.action.message}</p>}
+            {escrow.action.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{escrow.action.error}</p>}
+          </div>
+          <div className="card" style={{ textAlign: 'center' }}>
+            <p className="text-xs text-muted" style={{ marginBottom: '6px' }}>YOUR SETTLED BALANCE (ENCRYPTED)</p>
+            <div style={{ fontFamily: 'var(--cm-font-mono)', fontSize: '1.5rem', fontWeight: 700 }}>{escrow.balance === null ? '████' : `${escrow.balance} USDC`}</div>
+            <button className="btn btn-ghost btn-sm mt-2" onClick={() => escrow.revealBalance()} disabled={escrow.balanceLoading}><IconEye size={14} /> {escrow.balanceLoading ? 'Unsealing…' : 'Unseal'}</button>
+          </div>
         </div>
       </div></div>
     </div></div>

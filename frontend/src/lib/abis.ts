@@ -93,6 +93,19 @@ export const CROWDFUND_ABI = [
   "event Contributed(uint256 indexed id, address indexed contributor)",
 ];
 
+export const ESCROW_ABI = [
+  "function dealCount() view returns (uint256)",
+  "function deals(uint256) view returns (address buyer, address seller, address arbiter, bool buyerApproved, bool sellerApproved, uint8 status, string memo)",
+  `function openDeal(address seller, address arbiter, ${IN_EUINT} amount, string memo) returns (uint256)`,
+  "function approve(uint256 id)",
+  "function resolve(uint256 id, bool releaseToSeller)",
+  "function getAmount(uint256 id) view returns (uint256)",
+  "function getBalance() view returns (uint256)",
+  "event DealOpened(uint256 indexed id, address indexed buyer, address indexed seller, string memo)",
+  "event Released(uint256 indexed id)",
+  "event Refunded(uint256 indexed id)",
+];
+
 export const TRADING_ABI = [
   "function submitPosition((uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) positionSize, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) entryPrice, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) stopLoss, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) takeProfit, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) riskTolerance, string asset)",
   "function latestSignal(address) view returns (uint256 direction, uint256 strength, uint256 riskLevel, uint256 suggestedEntry, bool fulfilled, uint256 timestamp)",
