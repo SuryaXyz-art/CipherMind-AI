@@ -48,11 +48,9 @@ const config: HardhatUserConfig = {
   },
 
   etherscan: {
-    apiKey: {
-      "eth-sepolia": process.env.ETHERSCAN_API_KEY || "",
-      "arb-sepolia": process.env.ARBISCAN_API_KEY || "",
-      "base-sepolia": process.env.BASESCAN_API_KEY || "",
-    },
+    // Etherscan V2 unified API: a single key is routed by chainId across all
+    // chains (incl. Arbitrum Sepolia 421614). hardhat-verify >= 2.1 uses V2.
+    apiKey: process.env.ARBISCAN_API_KEY || "",
   },
 };
 
