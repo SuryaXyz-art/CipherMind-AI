@@ -22,6 +22,7 @@ import { useRealtime } from './hooks/useRealtime';
 import { useWalletIntel } from './hooks/useWalletIntel';
 import { useAutomation } from './hooks/useAutomation';
 import { useMemory } from './hooks/useMemory';
+import { useGovernance } from './hooks/useGovernance';
 import { CreditForm, TradingForm } from './components/EncryptForm';
 import { EncryptAnimation } from './components/EncryptAnimation';
 import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
@@ -31,7 +32,7 @@ import {
   IconAlertCircle, IconRefresh, IconEye, IconZap,
 } from './components/Icons';
 
-type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'live' | 'wallet' | 'automation' | 'memory' | 'credit' | 'trading' | 'research';
+type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'live' | 'wallet' | 'automation' | 'memory' | 'governance' | 'credit' | 'trading' | 'research';
 
 function useTheme(): ['dark' | 'light', () => void] {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -70,6 +71,7 @@ function App() {
   const walletIntel = useWalletIntel();
   const automation = useAutomation();
   const memory = useMemory();
+  const governance = useGovernance();
 
   return (
     <>
@@ -100,6 +102,7 @@ function App() {
               { id: 'wallet', label: 'Wallet' },
               { id: 'automation', label: 'Automation' },
               { id: 'memory', label: 'Memory' },
+              { id: 'governance', label: 'Governance' },
               { id: 'credit', label: 'Credit Score' },
               { id: 'trading', label: 'Trading Signals' },
               { id: 'research', label: 'Research' },
@@ -163,6 +166,7 @@ function App() {
       {page === 'wallet' && <WalletPage isConnected={fhe.isInitialized} onConnect={fhe.connect} wallet={walletIntel} />}
       {page === 'automation' && <AutomationPage isConnected={fhe.isInitialized} onConnect={fhe.connect} automation={automation} />}
       {page === 'memory' && <MemoryPage isConnected={fhe.isInitialized} onConnect={fhe.connect} memory={memory} />}
+      {page === 'governance' && <GovernancePage isConnected={fhe.isInitialized} onConnect={fhe.connect} governance={governance} />}
       {page === 'credit' && <CreditPage isConnected={fhe.isInitialized} onConnect={fhe.connect} credit={credit} />}
       {page === 'trading' && <TradingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} trading={trading} />}
       {page === 'research' && <ResearchPage isConnected={fhe.isInitialized} onConnect={fhe.connect} research={research} />}
@@ -390,6 +394,20 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
                 decrypt it.
               </p>
               <div className="flex gap-2"><span className="badge badge-accent">AES-GCM</span><span className="badge badge-info">Personal AI</span><span className="badge badge-warning">New</span></div>
+            </div>
+
+            {/* Encrypted Governance */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('governance')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(123,97,255,0.15), rgba(0,212,255,0.15))', border: '1px solid rgba(123,97,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconShieldCheck size={28} color="#7b61ff" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Encrypted Governance</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                Confidential DAO voting — ballots are encrypted, individual votes
+                are never stored, and only the aggregate tally is revealed on
+                finalize.
+              </p>
+              <div className="flex gap-2"><span className="badge badge-accent">FHE</span><span className="badge badge-info">DAO</span><span className="badge badge-success">Live</span></div>
             </div>
 
             {/* Credit Scoring */}
@@ -1785,6 +1803,72 @@ function MemoryPage({ isConnected, onConnect, memory }: { isConnected: boolean; 
             </div>
           </div>
         )}
+
+      </div></div>
+    </div></div>
+  );
+}
+
+// ── Encrypted Governance Page ────────────────────────────────────────────────
+
+function GovernancePage({ isConnected, onConnect, governance }: { isConnected: boolean; onConnect: () => void; governance: ReturnType<typeof useGovernance> }) {
+  const [title, setTitle] = useState('Increase treasury yield allocation to 20%');
+  const [pid, setPid] = useState('0');
+  const g = governance;
+
+  if (!isConnected) return <ConnectGate title="Encrypted Governance" onConnect={onConnect} icon={<IconShieldCheck size={28} color="var(--cm-accent-2)" />} />;
+
+  return (
+    <div className="dashboard"><div className="container">
+      <SurfaceHeader icon={<IconShieldCheck size={22} color="var(--cm-accent-2)" />} title="Encrypted DAO Governance" subtitle="Vote with encrypted ballots. Individual votes are never stored — only the aggregate tally, revealed when the proposal is finalized." />
+      <div className="dashboard-content"><div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <h3 style={{ marginBottom: '8px' }}>Create proposal</h3>
+          <div className="flex items-center gap-2">
+            <input className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} style={{ flex: 1 }} />
+            <button className="btn btn-primary btn-sm" onClick={() => g.createProposal(title)} disabled={g.create.loading}>{g.create.loading ? '…' : 'Create'}</button>
+          </div>
+          {g.create.message && <p className="text-xs mt-2" style={{ color: 'var(--cm-success)' }}>{g.create.message}</p>}
+          {g.create.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{g.create.error}</p>}
+        </div>
+
+        <div className="grid-2" style={{ alignItems: 'start' }}>
+          {/* Vote */}
+          <div className="card">
+            <h4 style={{ marginBottom: '12px' }}>Cast an encrypted vote</h4>
+            <input className="form-input" value={pid} onChange={(e) => setPid(e.target.value)} placeholder="Proposal ID" style={{ width: '100%', marginBottom: '10px' }} />
+            <div className="flex items-center gap-2">
+              <button className="btn btn-primary btn-sm" onClick={() => g.vote(Number(pid), true)} disabled={g.voteState.loading}>Vote YES</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => g.vote(Number(pid), false)} disabled={g.voteState.loading}>Vote NO</button>
+            </div>
+            {g.voteState.message && <p className="text-xs mt-2" style={{ color: 'var(--cm-success)' }}>{g.voteState.message}</p>}
+            {g.voteState.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{g.voteState.error}</p>}
+            <p className="text-xs text-muted" style={{ marginTop: '10px' }}>Your ballot is encrypted; the chain only ever holds the running tally.</p>
+          </div>
+
+          {/* Finalize + reveal */}
+          <div className="card">
+            <h4 style={{ marginBottom: '12px' }}>Finalize & reveal</h4>
+            <div className="flex items-center gap-2" style={{ marginBottom: '10px' }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => g.finalize(Number(pid))} disabled={g.finalizeState.loading}>Finalize #{pid}</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => g.revealTally(Number(pid))} disabled={g.tallyLoading}><IconEye size={14} /> {g.tallyLoading ? '…' : 'Reveal tally'}</button>
+            </div>
+            {g.finalizeState.message && <p className="text-xs" style={{ color: 'var(--cm-success)', marginBottom: '8px' }}>{g.finalizeState.message}</p>}
+            {g.finalizeState.error && <p className="text-xs" style={{ color: 'var(--cm-danger)', marginBottom: '8px' }}>{g.finalizeState.error}</p>}
+            {g.tally && (
+              <div style={{ padding: '14px', background: 'var(--cm-bg-secondary)', borderRadius: 'var(--cm-radius-md)', textAlign: 'center' }}>
+                <div className="flex items-center justify-center gap-6" style={{ fontFamily: 'var(--cm-font-mono)' }}>
+                  <span style={{ color: 'var(--cm-success)', fontWeight: 700 }}>YES {g.tally.yes}</span>
+                  <span style={{ color: 'var(--cm-danger)', fontWeight: 700 }}>NO {g.tally.no}</span>
+                </div>
+                <p className="text-sm mt-2" style={{ fontWeight: 600, color: g.tally.yes > g.tally.no ? 'var(--cm-success)' : 'var(--cm-text-secondary)' }}>
+                  {g.tally.yes > g.tally.no ? '✅ Proposal passes' : g.tally.yes < g.tally.no ? '❌ Proposal fails' : '⚖️ Tie'}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
 
       </div></div>
     </div></div>

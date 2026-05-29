@@ -106,6 +106,20 @@ export const ESCROW_ABI = [
   "event Refunded(uint256 indexed id)",
 ];
 
+export const GOVERNANCE_ABI = [
+  "function proposalCount() view returns (uint256)",
+  "function proposals(uint256) view returns (address proposer, string title, uint256 voters, bool finalized, bool exists)",
+  "function hasVoted(uint256, address) view returns (bool)",
+  "function createProposal(string title) returns (uint256)",
+  `function vote(uint256 id, ${IN_EUINT} choice)`,
+  "function finalize(uint256 id)",
+  "function getYes(uint256 id) view returns (uint256)",
+  "function getNo(uint256 id) view returns (uint256)",
+  "event ProposalCreated(uint256 indexed id, address indexed proposer, string title)",
+  "event Voted(uint256 indexed id, address indexed voter)",
+  "event Finalized(uint256 indexed id)",
+];
+
 export const TRADING_ABI = [
   "function submitPosition((uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) positionSize, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) entryPrice, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) stopLoss, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) takeProfit, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) riskTolerance, string asset)",
   "function latestSignal(address) view returns (uint256 direction, uint256 strength, uint256 riskLevel, uint256 suggestedEntry, bool fulfilled, uint256 timestamp)",

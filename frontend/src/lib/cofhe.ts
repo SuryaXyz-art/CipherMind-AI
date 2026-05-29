@@ -69,3 +69,10 @@ export async function unsealBool(handle: bigint | string): Promise<boolean> {
   const client = await getCofheClient();
   return client.decryptForView(handle, FheTypes.Bool).withPermit().execute();
 }
+
+/** Unseal a PUBLICLY-allowed euint32 (e.g. a finalized DAO tally). */
+export async function publicUnsealUint32(handle: bigint | string): Promise<number> {
+  const client = await getCofheClient();
+  const r = await client.decryptForTx(handle).withoutPermit().execute();
+  return Number(r.decryptedValue);
+}
