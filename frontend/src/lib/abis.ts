@@ -120,6 +120,17 @@ export const GOVERNANCE_ABI = [
   "event Finalized(uint256 indexed id)",
 ];
 
+export const REPUTATION_ABI = [
+  "function hasReputation(address) view returns (bool)",
+  "function attestationCount(address) view returns (uint256)",
+  `function attest(address subject, ${IN_EUINT} points)`,
+  `function proveAtLeast(${IN_EUINT} threshold)`,
+  "function getReputation() view returns (uint256)",
+  "function getProof() view returns (uint256)",
+  "function grantAccess(address viewer)",
+  "event Attested(address indexed attester, address indexed subject)",
+];
+
 export const TRADING_ABI = [
   "function submitPosition((uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) positionSize, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) entryPrice, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) stopLoss, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) takeProfit, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) riskTolerance, string asset)",
   "function latestSignal(address) view returns (uint256 direction, uint256 strength, uint256 riskLevel, uint256 suggestedEntry, bool fulfilled, uint256 timestamp)",

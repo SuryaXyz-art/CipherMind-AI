@@ -23,6 +23,7 @@ export const REQUESTS_ADDRESS = (import.meta.env.VITE_REQUESTS_ADDRESS as string
 export const CROWDFUND_ADDRESS = (import.meta.env.VITE_CROWDFUND_ADDRESS as string) || "";
 export const ESCROW_ADDRESS = (import.meta.env.VITE_ESCROW_ADDRESS as string) || "";
 export const GOVERNANCE_ADDRESS = (import.meta.env.VITE_GOVERNANCE_ADDRESS as string) || "";
+export const REPUTATION_ADDRESS = (import.meta.env.VITE_REPUTATION_ADDRESS as string) || "";
 
 export function requireAddress(addr: string, name: string): string {
   if (!addr) {

@@ -23,6 +23,7 @@ import { useWalletIntel } from './hooks/useWalletIntel';
 import { useAutomation } from './hooks/useAutomation';
 import { useMemory } from './hooks/useMemory';
 import { useGovernance } from './hooks/useGovernance';
+import { useReputation } from './hooks/useReputation';
 import { CreditForm, TradingForm } from './components/EncryptForm';
 import { EncryptAnimation } from './components/EncryptAnimation';
 import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
@@ -32,7 +33,7 @@ import {
   IconAlertCircle, IconRefresh, IconEye, IconZap,
 } from './components/Icons';
 
-type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'live' | 'wallet' | 'automation' | 'memory' | 'governance' | 'credit' | 'trading' | 'research';
+type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'live' | 'wallet' | 'automation' | 'memory' | 'governance' | 'reputation' | 'credit' | 'trading' | 'research';
 
 function useTheme(): ['dark' | 'light', () => void] {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -72,6 +73,7 @@ function App() {
   const automation = useAutomation();
   const memory = useMemory();
   const governance = useGovernance();
+  const reputation = useReputation();
 
   return (
     <>
@@ -103,6 +105,7 @@ function App() {
               { id: 'automation', label: 'Automation' },
               { id: 'memory', label: 'Memory' },
               { id: 'governance', label: 'Governance' },
+              { id: 'reputation', label: 'Reputation' },
               { id: 'credit', label: 'Credit Score' },
               { id: 'trading', label: 'Trading Signals' },
               { id: 'research', label: 'Research' },
@@ -167,6 +170,7 @@ function App() {
       {page === 'automation' && <AutomationPage isConnected={fhe.isInitialized} onConnect={fhe.connect} automation={automation} />}
       {page === 'memory' && <MemoryPage isConnected={fhe.isInitialized} onConnect={fhe.connect} memory={memory} />}
       {page === 'governance' && <GovernancePage isConnected={fhe.isInitialized} onConnect={fhe.connect} governance={governance} />}
+      {page === 'reputation' && <ReputationPage isConnected={fhe.isInitialized} onConnect={fhe.connect} reputation={reputation} />}
       {page === 'credit' && <CreditPage isConnected={fhe.isInitialized} onConnect={fhe.connect} credit={credit} />}
       {page === 'trading' && <TradingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} trading={trading} />}
       {page === 'research' && <ResearchPage isConnected={fhe.isInitialized} onConnect={fhe.connect} research={research} />}
@@ -408,6 +412,19 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
                 finalize.
               </p>
               <div className="flex gap-2"><span className="badge badge-accent">FHE</span><span className="badge badge-info">DAO</span><span className="badge badge-success">Live</span></div>
+            </div>
+
+            {/* ZK Reputation */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('reputation')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(123,97,255,0.15))', border: '1px solid rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconShieldCheck size={28} color="#22c55e" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>ZK Reputation</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                A private trust layer — peers attest with encrypted points; prove
+                your reputation clears a bar without revealing the number.
+              </p>
+              <div className="flex gap-2"><span className="badge badge-accent">FHE</span><span className="badge badge-info">Trust</span><span className="badge badge-success">Live</span></div>
             </div>
 
             {/* Credit Scoring */}
@@ -1867,6 +1884,80 @@ function GovernancePage({ isConnected, onConnect, governance }: { isConnected: b
                 </p>
               </div>
             )}
+          </div>
+        </div>
+
+      </div></div>
+    </div></div>
+  );
+}
+
+// ── ZK Reputation Page ───────────────────────────────────────────────────────
+
+function ReputationPage({ isConnected, onConnect, reputation }: { isConnected: boolean; onConnect: () => void; reputation: ReturnType<typeof useReputation> }) {
+  const [subject, setSubject] = useState('');
+  const [points, setPoints] = useState('40');
+  const [threshold, setThreshold] = useState('50');
+  const [viewer, setViewer] = useState('');
+  const r = reputation;
+
+  if (!isConnected) return <ConnectGate title="ZK Reputation" onConnect={onConnect} icon={<IconShieldCheck size={28} color="var(--cm-accent-1)" />} />;
+
+  const tier = r.score === null ? null : r.score >= 70 ? 'Elite' : r.score >= 30 ? 'Trusted' : 'Building';
+
+  return (
+    <div className="dashboard"><div className="container">
+      <SurfaceHeader icon={<IconShieldCheck size={22} color="var(--cm-accent-1)" />} title="ZK Reputation" subtitle="A private trust layer: peers attest with encrypted points; prove your reputation clears a bar without revealing the number." />
+      <div className="dashboard-content"><div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+
+        <div className="grid-2" style={{ alignItems: 'start' }}>
+          {/* Attest + your score */}
+          <div>
+            <div className="card" style={{ marginBottom: '16px' }}>
+              <h3 style={{ marginBottom: '8px' }}>Vouch for someone</h3>
+              <p className="text-secondary text-sm" style={{ marginBottom: '12px' }}>Add encrypted reputation points to another address (can't attest to yourself).</p>
+              <input className="form-input" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="0x subject" style={{ width: '100%', fontFamily: 'var(--cm-font-mono)', fontSize: '0.8rem', marginBottom: '8px' }} />
+              <div className="flex items-center gap-2">
+                <input className="form-input" type="number" value={points} onChange={(e) => setPoints(e.target.value)} style={{ maxWidth: '110px' }} />
+                <button className="btn btn-primary btn-sm" onClick={() => r.attest(subject.trim(), Number(points))} disabled={r.attestState.loading || !subject.trim()}>{r.attestState.loading ? '…' : 'Attest'}</button>
+              </div>
+              {r.attestState.message && <p className="text-xs mt-2" style={{ color: 'var(--cm-success)' }}>{r.attestState.message}</p>}
+              {r.attestState.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{r.attestState.error}</p>}
+            </div>
+            <div className="card" style={{ textAlign: 'center' }}>
+              <p className="text-xs text-muted" style={{ marginBottom: '6px' }}>YOUR ENCRYPTED REPUTATION</p>
+              <div style={{ fontFamily: 'var(--cm-font-mono)', fontSize: '1.75rem', fontWeight: 700 }}>{r.score === null ? '████' : r.score}</div>
+              {tier && <span className="badge badge-accent" style={{ marginTop: 6 }}>{tier}</span>}
+              <div><button className="btn btn-ghost btn-sm mt-2" onClick={() => r.revealScore()} disabled={r.scoreLoading}><IconEye size={14} /> {r.scoreLoading ? 'Unsealing…' : 'Unseal score'}</button></div>
+            </div>
+          </div>
+
+          {/* Prove + disclose */}
+          <div>
+            <div className="card" style={{ marginBottom: '16px' }}>
+              <h3 style={{ marginBottom: '8px' }}>Prove trust ≥ threshold</h3>
+              <p className="text-secondary text-sm" style={{ marginBottom: '12px' }}>Prove you clear a bar for a lender/gate without revealing your score.</p>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-secondary">Reputation ≥</span>
+                <input className="form-input" type="number" value={threshold} onChange={(e) => setThreshold(e.target.value)} style={{ maxWidth: '100px' }} />
+                <button className="btn btn-secondary btn-sm" onClick={() => r.proveAtLeast(Number(threshold))} disabled={r.proof.loading}>{r.proof.loading ? '…' : 'Prove'}</button>
+              </div>
+              {r.proof.meets !== null && (
+                <p className="text-sm mt-2" style={{ color: r.proof.meets ? 'var(--cm-success)' : 'var(--cm-text-secondary)' }}>
+                  {r.proof.meets ? `✅ Verified: reputation ≥ ${r.proof.value}` : `❌ Below ${r.proof.value}`} — exact score stayed sealed.
+                </p>
+              )}
+              {r.proof.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{r.proof.error}</p>}
+            </div>
+            <div className="card">
+              <h3 style={{ marginBottom: '8px' }}>Disclose to a verifier</h3>
+              <div className="flex items-center gap-2">
+                <input className="form-input" value={viewer} onChange={(e) => setViewer(e.target.value)} placeholder="0x verifier" style={{ flex: 1, fontFamily: 'var(--cm-font-mono)', fontSize: '0.8rem' }} />
+                <button className="btn btn-ghost btn-sm" onClick={() => r.grantAccess(viewer.trim())} disabled={r.grant.loading || !viewer.trim()}>{r.grant.loading ? '…' : 'Grant'}</button>
+              </div>
+              {r.grant.to && <p className="text-sm mt-2" style={{ color: 'var(--cm-success)' }}>✅ {r.grant.to.slice(0, 8)}… can now unseal your reputation.</p>}
+              {r.grant.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{r.grant.error}</p>}
+            </div>
           </div>
         </div>
 
