@@ -21,6 +21,7 @@ import { AGENTS } from './lib/agents';
 import { useRealtime } from './hooks/useRealtime';
 import { useWalletIntel } from './hooks/useWalletIntel';
 import { useAutomation } from './hooks/useAutomation';
+import { useMemory } from './hooks/useMemory';
 import { CreditForm, TradingForm } from './components/EncryptForm';
 import { EncryptAnimation } from './components/EncryptAnimation';
 import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
@@ -30,7 +31,7 @@ import {
   IconAlertCircle, IconRefresh, IconEye, IconZap,
 } from './components/Icons';
 
-type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'live' | 'wallet' | 'automation' | 'credit' | 'trading' | 'research';
+type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'live' | 'wallet' | 'automation' | 'memory' | 'credit' | 'trading' | 'research';
 
 function useTheme(): ['dark' | 'light', () => void] {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -68,6 +69,7 @@ function App() {
   const realtime = useRealtime(page === 'live');
   const walletIntel = useWalletIntel();
   const automation = useAutomation();
+  const memory = useMemory();
 
   return (
     <>
@@ -97,6 +99,7 @@ function App() {
               { id: 'live', label: 'Live' },
               { id: 'wallet', label: 'Wallet' },
               { id: 'automation', label: 'Automation' },
+              { id: 'memory', label: 'Memory' },
               { id: 'credit', label: 'Credit Score' },
               { id: 'trading', label: 'Trading Signals' },
               { id: 'research', label: 'Research' },
@@ -159,6 +162,7 @@ function App() {
       {page === 'live' && <LiveIntelPage realtime={realtime} />}
       {page === 'wallet' && <WalletPage isConnected={fhe.isInitialized} onConnect={fhe.connect} wallet={walletIntel} />}
       {page === 'automation' && <AutomationPage isConnected={fhe.isInitialized} onConnect={fhe.connect} automation={automation} />}
+      {page === 'memory' && <MemoryPage isConnected={fhe.isInitialized} onConnect={fhe.connect} memory={memory} />}
       {page === 'credit' && <CreditPage isConnected={fhe.isInitialized} onConnect={fhe.connect} credit={credit} />}
       {page === 'trading' && <TradingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} trading={trading} />}
       {page === 'research' && <ResearchPage isConnected={fhe.isInitialized} onConnect={fhe.connect} research={research} />}
@@ -372,6 +376,20 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
                 (approval mode, spending limits, emergency stop) gates execution.
               </p>
               <div className="flex gap-2"><span className="badge badge-accent">Agentic</span><span className="badge badge-info">Safe-exec</span><span className="badge badge-warning">New</span></div>
+            </div>
+
+            {/* Encrypted Memory */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('memory')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(0,212,255,0.15), rgba(123,97,255,0.15))', border: '1px solid rgba(0,212,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconLock size={28} color="#00d4ff" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Encrypted Memory</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                Persistent AI memory encrypted at rest with a wallet-derived key.
+                The AI remembers your preferences and risk profile — only you can
+                decrypt it.
+              </p>
+              <div className="flex gap-2"><span className="badge badge-accent">AES-GCM</span><span className="badge badge-info">Personal AI</span><span className="badge badge-warning">New</span></div>
             </div>
 
             {/* Credit Scoring */}
@@ -1688,6 +1706,82 @@ function AutomationPage({ isConnected, onConnect, automation }: { isConnected: b
                   <span className="text-secondary">{e.text}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+      </div></div>
+    </div></div>
+  );
+}
+
+// ── Encrypted Memory Page ────────────────────────────────────────────────────
+
+function MemoryPage({ isConnected, onConnect, memory }: { isConnected: boolean; onConnect: () => void; memory: ReturnType<typeof useMemory> }) {
+  const [kind, setKind] = useState<'note' | 'preference' | 'risk' | 'conversation'>('preference');
+  const [text, setText] = useState('');
+  const [q, setQ] = useState('');
+
+  if (!isConnected) return <ConnectGate title="Encrypted Memory" onConnect={onConnect} icon={<IconLock size={28} color="var(--cm-accent-1)" />} />;
+
+  return (
+    <div className="dashboard"><div className="container">
+      <SurfaceHeader icon={<IconLock size={22} color="var(--cm-accent-1)" />} title="Encrypted AI Memory" subtitle="Persistent memory encrypted at rest with a key derived from your wallet signature — only you can decrypt it." />
+      <div className="dashboard-content"><div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+
+        {!memory.unlocked ? (
+          <div className="card text-center" style={{ padding: '48px 24px' }}>
+            <div style={{ fontFamily: 'var(--cm-font-mono)', fontSize: '2rem', letterSpacing: '0.1em', marginBottom: '12px' }}>████████</div>
+            <p className="text-secondary" style={{ marginBottom: '20px', lineHeight: 1.6 }}>
+              Your memory is sealed. Sign a free off-chain message to derive your private key and unlock it on this device.
+            </p>
+            <button className="btn btn-primary btn-lg" onClick={() => memory.unlock()} disabled={memory.busy}><IconUnlock size={18} /> {memory.busy ? 'Unlocking…' : 'Unlock memory'}</button>
+            {memory.error && <p className="text-xs mt-4" style={{ color: 'var(--cm-danger)' }}>{memory.error}</p>}
+          </div>
+        ) : (
+          <div className="grid-2" style={{ alignItems: 'start' }}>
+            {/* Manage */}
+            <div>
+              <div className="card" style={{ marginBottom: '16px' }}>
+                <h3 style={{ marginBottom: '12px' }}>Add to memory</h3>
+                <select className="form-select" value={kind} onChange={(e) => setKind(e.target.value as any)} style={{ width: '100%', marginBottom: '8px' }}>
+                  <option value="preference">Preference</option>
+                  <option value="risk">Risk profile</option>
+                  <option value="note">Note</option>
+                  <option value="conversation">Conversation</option>
+                </select>
+                <textarea className="form-input" value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. I prefer low-risk stablecoin strategies and dislike leverage." style={{ width: '100%', minHeight: '60px', marginBottom: '8px' }} />
+                <button className="btn btn-primary btn-sm" onClick={() => { memory.add(kind, text); setText(''); }} disabled={!text.trim()}>Encrypt & save</button>
+              </div>
+              <div className="card">
+                <div className="flex items-center justify-between mb-4">
+                  <h4>Stored memories ({memory.entries.length})</h4>
+                  {memory.entries.length > 0 && <button className="btn btn-ghost btn-sm" onClick={() => memory.clearAll()}>Clear all</button>}
+                </div>
+                {memory.entries.length === 0 && <p className="text-sm text-muted">No memories yet — add a preference or risk note.</p>}
+                <div className="flex flex-col gap-2">
+                  {memory.entries.map((e) => (
+                    <div key={e.id} className="flex items-center justify-between" style={{ padding: '8px 10px', background: 'var(--cm-bg-secondary)', borderRadius: 'var(--cm-radius-sm)' }}>
+                      <div><span className="badge badge-info" style={{ marginRight: 6 }}>{e.kind}</span><span className="text-sm">{e.text}</span></div>
+                      <button className="btn btn-ghost btn-sm" onClick={() => memory.remove(e.id)}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* Ask with memory */}
+            <div className="card">
+              <h3 style={{ marginBottom: '12px' }}>Ask — with memory</h3>
+              <p className="text-secondary text-sm" style={{ marginBottom: '12px' }}>The AI retrieves your relevant private memories and tailors its answer.</p>
+              <div className="flex items-center gap-2" style={{ marginBottom: '12px' }}>
+                <input className="form-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. What strategy suits me?" style={{ flex: 1 }} />
+                <button className="btn btn-primary btn-sm" onClick={() => memory.ask(q)} disabled={memory.asking || !q.trim()}>{memory.asking ? '…' : 'Ask'}</button>
+              </div>
+              {memory.used.length > 0 && (
+                <p className="text-xs text-muted" style={{ marginBottom: '8px' }}>Recalled {memory.used.length} memory item(s): {memory.used.map((u) => u.kind).join(', ')}</p>
+              )}
+              {memory.answer && <div className="text-sm text-secondary" style={{ lineHeight: 1.7, whiteSpace: 'pre-wrap', padding: '12px', background: 'var(--cm-bg-secondary)', borderRadius: 'var(--cm-radius-md)' }}>{memory.answer}</div>}
+              <p className="text-xs text-muted" style={{ marginTop: '12px' }}>Encrypted at rest (AES-GCM, wallet-derived key). Hosted vector search would need a backend.</p>
             </div>
           </div>
         )}
