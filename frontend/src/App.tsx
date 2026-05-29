@@ -55,6 +55,28 @@ function useTheme(): ['dark' | 'light', () => void] {
   return [theme, () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))];
 }
 
+// Grouped nav dropdown — keeps the top bar compact so wallet/theme stay visible.
+function NavMenu({ label, items, page, setPage }: { label: string; items: { id: Page; label: string }[]; page: Page; setPage: (p: Page) => void }) {
+  const [open, setOpen] = useState(false);
+  const active = items.some((i) => i.id === page);
+  return (
+    <li className="nav-dropdown" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <button className={`navbar-link ${active ? 'active' : ''}`} onClick={() => setOpen((o) => !o)} aria-haspopup="true" aria-expanded={open}>
+        {label} <span style={{ fontSize: '0.65em', opacity: 0.7 }}>▼</span>
+      </button>
+      {open && (
+        <div className="nav-dropdown-menu">
+          {items.map((i) => (
+            <button key={i.id} className={`nav-dropdown-item ${page === i.id ? 'active' : ''}`} onClick={() => { setPage(i.id); setOpen(false); }} id={`nav-${i.id}`}>
+              {i.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </li>
+  );
+}
+
 function App() {
   const [page, setPage] = useState<Page>('home');
   const [theme, toggleTheme] = useTheme();
@@ -82,7 +104,7 @@ function App() {
       {/* ── Navigation ────────────────────────────────────────────── */}
       <nav className="navbar" id="navbar">
         <div className="navbar-inner">
-          <a className="navbar-logo" onClick={() => setPage('home')} style={{ cursor: 'pointer' }}>
+          <a className="navbar-logo" onClick={() => setPage('home')} style={{ cursor: 'pointer', flexShrink: 0 }}>
             <img
               src="/ciphermind-logo.png"
               alt="CipherMind AI"
@@ -93,39 +115,37 @@ function App() {
           </a>
 
           <ul className="navbar-nav">
-            {[
-              { id: 'home', label: 'Home' },
+            <li>
+              <button className={`navbar-link ${page === 'home' ? 'active' : ''}`} onClick={() => setPage('home')} id="nav-home">Home</button>
+            </li>
+            <NavMenu label="Finance" page={page} setPage={setPage} items={[
               { id: 'vault', label: 'Payments' },
               { id: 'payroll', label: 'Payroll' },
               { id: 'lending', label: 'Lending' },
               { id: 'requests', label: 'Requests' },
               { id: 'crowdfund', label: 'Crowdfund' },
               { id: 'escrow', label: 'Escrow' },
-              { id: 'agents', label: 'Agents' },
-              { id: 'market', label: 'Market' },
-              { id: 'live', label: 'Live' },
-              { id: 'wallet', label: 'Wallet' },
+            ]} />
+            <NavMenu label="AI Agents" page={page} setPage={setPage} items={[
+              { id: 'agents', label: 'Agent Council' },
               { id: 'automation', label: 'Automation' },
               { id: 'memory', label: 'Memory' },
-              { id: 'governance', label: 'Governance' },
-              { id: 'reputation', label: 'Reputation' },
+              { id: 'market', label: 'Marketplace' },
+              { id: 'research', label: 'Research' },
+            ]} />
+            <NavMenu label="Intelligence" page={page} setPage={setPage} items={[
+              { id: 'live', label: 'Live Intelligence' },
+              { id: 'wallet', label: 'Wallet Intelligence' },
               { id: 'credit', label: 'Credit Score' },
               { id: 'trading', label: 'Trading Signals' },
-              { id: 'research', label: 'Research' },
-            ].map(item => (
-              <li key={item.id}>
-                <button
-                  className={`navbar-link ${page === item.id ? 'active' : ''}`}
-                  onClick={() => setPage(item.id as Page)}
-                  id={`nav-${item.id}`}
-                >
-                  {item.label}
-                </button>
-              </li>
-            ))}
+            ]} />
+            <NavMenu label="Trust" page={page} setPage={setPage} items={[
+              { id: 'governance', label: 'Governance' },
+              { id: 'reputation', label: 'Reputation' },
+            ]} />
           </ul>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3" style={{ flexShrink: 0 }}>
             <button
               className="btn btn-ghost btn-sm"
               onClick={toggleTheme}
