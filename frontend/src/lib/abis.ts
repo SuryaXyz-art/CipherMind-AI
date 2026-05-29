@@ -69,6 +69,30 @@ export const LENDING_ABI = [
   "event Borrowed(address indexed user)",
 ];
 
+export const REQUESTS_ABI = [
+  "function requestCount() view returns (uint256)",
+  "function requests(uint256) view returns (address requester, string memo, bool fulfilled, bool cancelled, address payer)",
+  `function createRequest(${IN_EUINT} amount, string memo) returns (uint256)`,
+  "function pay(uint256 id)",
+  "function cancel(uint256 id)",
+  "function getReceived() view returns (uint256)",
+  "event RequestCreated(uint256 indexed id, address indexed requester, string memo)",
+  "event RequestPaid(uint256 indexed id, address indexed payer)",
+];
+
+export const CROWDFUND_ABI = [
+  "function campaignCount() view returns (uint256)",
+  "function campaigns(uint256) view returns (address owner, string title, uint256 contributorCount, bool exists)",
+  `function createCampaign(${IN_EUINT} goal, string title) returns (uint256)`,
+  `function contribute(uint256 id, ${IN_EUINT} amount)`,
+  "function checkGoalReached(uint256 id)",
+  "function getRaised(uint256 id) view returns (uint256)",
+  "function getMyContribution(uint256 id) view returns (uint256)",
+  "function getGoalReached(uint256 id) view returns (uint256)",
+  "event CampaignCreated(uint256 indexed id, address indexed owner, string title)",
+  "event Contributed(uint256 indexed id, address indexed contributor)",
+];
+
 export const TRADING_ABI = [
   "function submitPosition((uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) positionSize, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) entryPrice, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) stopLoss, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) takeProfit, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) riskTolerance, string asset)",
   "function latestSignal(address) view returns (uint256 direction, uint256 strength, uint256 riskLevel, uint256 suggestedEntry, bool fulfilled, uint256 timestamp)",

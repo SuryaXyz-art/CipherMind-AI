@@ -1,10 +1,10 @@
 /** ethers contract handles for the CipherMind contracts (browser wallet signer). */
 
 import { BrowserProvider, Contract, type Signer } from "ethers";
-import { CREDIT_ABI, TRADING_ABI, VAULT_ABI, USDC_ABI, PAYROLL_ABI, LENDING_ABI } from "./abis";
+import { CREDIT_ABI, TRADING_ABI, VAULT_ABI, USDC_ABI, PAYROLL_ABI, LENDING_ABI, REQUESTS_ABI, CROWDFUND_ABI } from "./abis";
 import {
   CREDIT_ADDRESS, TRADING_ADDRESS, VAULT_ADDRESS, USDC_ADDRESS,
-  PAYROLL_ADDRESS, LENDING_ADDRESS, requireAddress,
+  PAYROLL_ADDRESS, LENDING_ADDRESS, REQUESTS_ADDRESS, CROWDFUND_ADDRESS, requireAddress,
 } from "./chain";
 
 export async function getSigner(): Promise<Signer> {
@@ -42,6 +42,16 @@ export async function getPayrollContract(): Promise<Contract> {
 export async function getLendingContract(): Promise<Contract> {
   const signer = await getSigner();
   return new Contract(requireAddress(LENDING_ADDRESS, "Lending"), LENDING_ABI, signer);
+}
+
+export async function getRequestsContract(): Promise<Contract> {
+  const signer = await getSigner();
+  return new Contract(requireAddress(REQUESTS_ADDRESS, "PaymentRequests"), REQUESTS_ABI, signer);
+}
+
+export async function getCrowdfundContract(): Promise<Contract> {
+  const signer = await getSigner();
+  return new Contract(requireAddress(CROWDFUND_ADDRESS, "Crowdfund"), CROWDFUND_ABI, signer);
 }
 
 /** Poll a predicate until true or timeout — used to await oracle fulfillment. */

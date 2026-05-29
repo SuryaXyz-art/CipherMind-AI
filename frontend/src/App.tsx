@@ -13,6 +13,8 @@ import { useResearch } from './hooks/useResearch';
 import { useVault } from './hooks/useVault';
 import { usePayroll } from './hooks/usePayroll';
 import { useLending } from './hooks/useLending';
+import { useRequests } from './hooks/useRequests';
+import { useCrowdfund } from './hooks/useCrowdfund';
 import { CreditForm, TradingForm } from './components/EncryptForm';
 import { EncryptAnimation } from './components/EncryptAnimation';
 import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
@@ -22,7 +24,7 @@ import {
   IconAlertCircle, IconRefresh, IconEye, IconZap,
 } from './components/Icons';
 
-type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'credit' | 'trading' | 'research';
+type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'credit' | 'trading' | 'research';
 
 function useTheme(): ['dark' | 'light', () => void] {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -53,6 +55,8 @@ function App() {
   const vault = useVault();
   const payroll = usePayroll();
   const lending = useLending();
+  const requests = useRequests();
+  const crowdfund = useCrowdfund();
 
   return (
     <>
@@ -75,6 +79,8 @@ function App() {
               { id: 'vault', label: 'Payments' },
               { id: 'payroll', label: 'Payroll' },
               { id: 'lending', label: 'Lending' },
+              { id: 'requests', label: 'Requests' },
+              { id: 'crowdfund', label: 'Crowdfund' },
               { id: 'credit', label: 'Credit Score' },
               { id: 'trading', label: 'Trading Signals' },
               { id: 'research', label: 'Research' },
@@ -130,6 +136,8 @@ function App() {
       {page === 'vault' && <VaultPage isConnected={fhe.isInitialized} onConnect={fhe.connect} vault={vault} />}
       {page === 'payroll' && <PayrollPage isConnected={fhe.isInitialized} onConnect={fhe.connect} payroll={payroll} />}
       {page === 'lending' && <LendingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} lending={lending} />}
+      {page === 'requests' && <RequestsPage isConnected={fhe.isInitialized} onConnect={fhe.connect} requests={requests} />}
+      {page === 'crowdfund' && <CrowdfundPage isConnected={fhe.isInitialized} onConnect={fhe.connect} crowdfund={crowdfund} />}
       {page === 'credit' && <CreditPage isConnected={fhe.isInitialized} onConnect={fhe.connect} credit={credit} />}
       {page === 'trading' && <TradingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} trading={trading} />}
       {page === 'research' && <ResearchPage isConnected={fhe.isInitialized} onConnect={fhe.connect} research={research} />}
@@ -251,6 +259,32 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
                 encrypted. LTV enforced on ciphertext.
               </p>
               <div className="flex gap-2"><span className="badge badge-accent">FHE</span><span className="badge badge-info">DeFi</span><span className="badge badge-success">Live</span></div>
+            </div>
+
+            {/* Payment Requests */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('requests')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(0,212,255,0.15), rgba(34,197,94,0.15))', border: '1px solid rgba(0,212,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconSend size={28} color="#00d4ff" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Payment Requests</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                Ask for money with a public memo and a sealed amount. Share it; let
+                anyone fulfill it without publishing the number.
+              </p>
+              <div className="flex gap-2"><span className="badge badge-accent">FHE</span><span className="badge badge-info">Invoices</span><span className="badge badge-success">Live</span></div>
+            </div>
+
+            {/* Crowdfund */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('crowdfund')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(192,132,252,0.15), rgba(0,212,255,0.15))', border: '1px solid rgba(192,132,252,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconTrendingUp size={28} color="#c084fc" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Confidential Crowdfund</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                Raise toward a sealed goal. Participation is public; every backer's
+                contribution amount stays private.
+              </p>
+              <div className="flex gap-2"><span className="badge badge-accent">FHE</span><span className="badge badge-info">Funding</span><span className="badge badge-success">Live</span></div>
             </div>
 
             {/* Credit Scoring */}
@@ -1054,6 +1088,98 @@ function LendingPage({ isConnected, onConnect, lending }: { isConnected: boolean
           <ActionCard title="Deposit collateral" desc="Mint test USDC and lock it as encrypted collateral." amount={dep} setAmount={setDep} btn="Deposit" onClick={() => lending.depositCollateral(Number(dep))} state={lending.deposit} />
           <ActionCard title="Borrow" desc="Draw up to 75% LTV. Over-limit silently draws 0." amount={bor} setAmount={setBor} btn="Borrow" onClick={() => lending.borrow(Number(bor))} state={lending.loan} />
           <ActionCard title="Repay" desc="Reduce your encrypted debt." amount={rep} setAmount={setRep} btn="Repay" onClick={() => lending.repay(Number(rep))} state={lending.loan} />
+        </div>
+      </div></div>
+    </div></div>
+  );
+}
+
+// ── Payment Requests Page ────────────────────────────────────────────────────
+
+function RequestsPage({ isConnected, onConnect, requests }: { isConnected: boolean; onConnect: () => void; requests: ReturnType<typeof useRequests> }) {
+  const [amt, setAmt] = useState('250');
+  const [memo, setMemo] = useState('April rent share');
+  const [payId, setPayId] = useState('0');
+
+  if (!isConnected) return <ConnectGate title="Payment Requests" onConnect={onConnect} icon={<IconWallet size={28} color="var(--cm-accent-1)" />} />;
+
+  return (
+    <div className="dashboard"><div className="container">
+      <SurfaceHeader icon={<IconLock size={22} color="var(--cm-accent-1)" />} title="Payment Requests" subtitle="Ask for a payment with a public memo and a sealed amount. Anyone can fulfill it." />
+      <div className="dashboard-content"><div className="grid-2" style={{ maxWidth: '1000px', margin: '0 auto', alignItems: 'start' }}>
+        <div className="card">
+          <h3 style={{ marginBottom: '8px' }}>Create a request</h3>
+          <p className="text-secondary text-sm" style={{ marginBottom: '12px' }}>The memo is public; the amount is encrypted.</p>
+          <input className="form-input" value={memo} onChange={e => setMemo(e.target.value)} placeholder="Memo" style={{ width: '100%', marginBottom: '8px' }} />
+          <div className="flex items-center gap-2">
+            <input className="form-input" type="number" value={amt} onChange={e => setAmt(e.target.value)} style={{ maxWidth: '120px' }} />
+            <button className="btn btn-primary btn-sm" onClick={() => requests.createRequest(Number(amt), memo)} disabled={requests.create.loading}>{requests.create.loading ? '…' : 'Create'}</button>
+          </div>
+          {requests.create.message && <p className="text-xs mt-2" style={{ color: 'var(--cm-success)' }}>{requests.create.message}</p>}
+          {requests.create.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{requests.create.error}</p>}
+        </div>
+        <div className="card">
+          <h3 style={{ marginBottom: '8px' }}>Pay / your receipts</h3>
+          <div className="flex items-center gap-2" style={{ marginBottom: '12px' }}>
+            <input className="form-input" value={payId} onChange={e => setPayId(e.target.value)} placeholder="Request ID" style={{ maxWidth: '120px' }} />
+            <button className="btn btn-primary btn-sm" onClick={() => requests.pay(Number(payId))} disabled={requests.payState.loading}>{requests.payState.loading ? '…' : 'Pay'}</button>
+          </div>
+          {requests.payState.message && <p className="text-xs" style={{ color: 'var(--cm-success)', marginBottom: '8px' }}>{requests.payState.message}</p>}
+          {requests.payState.error && <p className="text-xs" style={{ color: 'var(--cm-danger)', marginBottom: '8px' }}>{requests.payState.error}</p>}
+          <div style={{ textAlign: 'center', padding: '16px', background: 'var(--cm-bg-secondary)', borderRadius: 'var(--cm-radius-md)' }}>
+            <p className="text-xs text-muted" style={{ marginBottom: '6px' }}>TOTAL RECEIVED (ENCRYPTED)</p>
+            <div style={{ fontFamily: 'var(--cm-font-mono)', fontSize: '1.5rem', fontWeight: 700 }}>{requests.received === null ? '████' : `${requests.received} USDC`}</div>
+            <button className="btn btn-ghost btn-sm mt-2" onClick={() => requests.revealReceived()} disabled={requests.receivedLoading}><IconEye size={14} /> {requests.receivedLoading ? 'Unsealing…' : 'Unseal'}</button>
+          </div>
+        </div>
+      </div></div>
+    </div></div>
+  );
+}
+
+// ── Crowdfund Page ───────────────────────────────────────────────────────────
+
+function CrowdfundPage({ isConnected, onConnect, crowdfund }: { isConnected: boolean; onConnect: () => void; crowdfund: ReturnType<typeof useCrowdfund> }) {
+  const [goal, setGoal] = useState('1000');
+  const [title, setTitle] = useState('Community project');
+  const [cid, setCid] = useState('0');
+  const [contribAmt, setContribAmt] = useState('100');
+  const [viewId, setViewId] = useState('0');
+
+  if (!isConnected) return <ConnectGate title="Crowdfund" onConnect={onConnect} icon={<IconWallet size={28} color="var(--cm-accent-2)" />} />;
+
+  return (
+    <div className="dashboard"><div className="container">
+      <SurfaceHeader icon={<IconBarChart size={22} color="var(--cm-accent-2)" />} title="Confidential Crowdfund" subtitle="Raise toward a sealed goal. Participation is public; every contribution amount stays private." />
+      <div className="dashboard-content"><div className="grid-3" style={{ maxWidth: '1100px', margin: '0 auto', alignItems: 'start', gap: '16px' }}>
+        <div className="card">
+          <h4 style={{ marginBottom: '8px' }}>Create campaign</h4>
+          <input className="form-input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Title" style={{ width: '100%', marginBottom: '8px' }} />
+          <div className="flex items-center gap-2">
+            <input className="form-input" type="number" value={goal} onChange={e => setGoal(e.target.value)} style={{ maxWidth: '110px' }} placeholder="Goal" />
+            <button className="btn btn-primary btn-sm" onClick={() => crowdfund.createCampaign(Number(goal), title)} disabled={crowdfund.create.loading}>{crowdfund.create.loading ? '…' : 'Create'}</button>
+          </div>
+          {crowdfund.create.message && <p className="text-xs mt-2" style={{ color: 'var(--cm-success)' }}>{crowdfund.create.message}</p>}
+          {crowdfund.create.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{crowdfund.create.error}</p>}
+        </div>
+        <div className="card">
+          <h4 style={{ marginBottom: '8px' }}>Contribute</h4>
+          <input className="form-input" value={cid} onChange={e => setCid(e.target.value)} placeholder="Campaign ID" style={{ width: '100%', marginBottom: '8px' }} />
+          <div className="flex items-center gap-2">
+            <input className="form-input" type="number" value={contribAmt} onChange={e => setContribAmt(e.target.value)} style={{ maxWidth: '110px' }} />
+            <button className="btn btn-primary btn-sm" onClick={() => crowdfund.contribute(Number(cid), Number(contribAmt))} disabled={crowdfund.contributeState.loading}>{crowdfund.contributeState.loading ? '…' : 'Give'}</button>
+          </div>
+          {crowdfund.contributeState.message && <p className="text-xs mt-2" style={{ color: 'var(--cm-success)' }}>{crowdfund.contributeState.message}</p>}
+          {crowdfund.contributeState.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{crowdfund.contributeState.error}</p>}
+        </div>
+        <div className="card">
+          <h4 style={{ marginBottom: '8px' }}>Owner progress</h4>
+          <div className="flex items-center gap-2" style={{ marginBottom: '12px' }}>
+            <input className="form-input" value={viewId} onChange={e => setViewId(e.target.value)} placeholder="Campaign ID" style={{ maxWidth: '110px' }} />
+            <button className="btn btn-ghost btn-sm" onClick={() => crowdfund.revealProgress(Number(viewId))} disabled={crowdfund.viewLoading}><IconEye size={14} /> {crowdfund.viewLoading ? '…' : 'Reveal'}</button>
+          </div>
+          <Stat label="Raised (encrypted)" value={crowdfund.raised === null ? '████' : `${crowdfund.raised}`} />
+          {crowdfund.reached !== null && <p className="text-sm mt-2" style={{ color: crowdfund.reached ? 'var(--cm-success)' : 'var(--cm-text-secondary)' }}>{crowdfund.reached ? '✅ Goal reached' : 'ℹ️ Goal not yet reached'} (total stayed sealed)</p>}
         </div>
       </div></div>
     </div></div>
