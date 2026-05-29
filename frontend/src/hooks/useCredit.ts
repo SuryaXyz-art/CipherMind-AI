@@ -8,7 +8,7 @@
 
 import { useState, useCallback } from "react";
 import { encryptUint32s, unsealUint32, unsealBool } from "../lib/cofhe";
-import { getCreditContract, getSigner, pollUntil } from "../lib/contracts";
+import { getCreditContract, getSigner, pollUntil, ORACLE_TIMEOUT_MESSAGE } from "../lib/contracts";
 
 interface CreditProfile { income: number; debtRatio: number; historyMonths: number; openAccounts: number }
 interface CreditResult { score: number; confidence: number; status: "excellent" | "good" | "fair" | "poor" }
@@ -82,8 +82,20 @@ export function useCredit(): UseCreditReturn {
       setState("processing");
       setCurrentStep("Oracle analyzing anonymized features via Nous Hermes...");
       setProgress(60);
-      const fulfilled = await pollUntil(async () => (await credit.results(address)).fulfilled);
-      if (!fulfilled) throw new Error("Timed out waiting for the oracle. Is the oracle service running?");
+      const fulfilled = await pollUntil(
+        async () => (await credit.results(address)).fulfilled,
+        {
+          onWait: (ms) => {
+            const s = Math.round(ms / 1000);
+            setCurrentStep(
+              s < 16
+                ? `Oracle analyzing anonymized features via Nous Hermes... (${s}s)`
+                : `Still waiting for the oracle (${s}s)… make sure the oracle service is running.`,
+            );
+          },
+        },
+      );
+      if (!fulfilled) throw new Error(ORACLE_TIMEOUT_MESSAGE);
 
       // 4. Unseal the encrypted result (only you can)
       setState("decrypting");

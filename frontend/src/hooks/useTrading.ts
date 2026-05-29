@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from "react";
 import { encryptUint32s, unsealUint32, unsealBool } from "../lib/cofhe";
-import { getTradingContract, getSigner, pollUntil } from "../lib/contracts";
+import { getTradingContract, getSigner, pollUntil, ORACLE_TIMEOUT_MESSAGE } from "../lib/contracts";
 
 interface TradingPosition {
   asset: string;
@@ -80,8 +80,20 @@ export function useTrading(): UseTradingReturn {
       setState("processing");
       setCurrentStep("Oracle generating signal via Nous Hermes...");
       setProgress(62);
-      const fulfilled = await pollUntil(async () => (await trading.latestSignal(address)).fulfilled);
-      if (!fulfilled) throw new Error("Timed out waiting for the oracle. Is the oracle service running?");
+      const fulfilled = await pollUntil(
+        async () => (await trading.latestSignal(address)).fulfilled,
+        {
+          onWait: (ms) => {
+            const s = Math.round(ms / 1000);
+            setCurrentStep(
+              s < 16
+                ? `Oracle generating signal via Nous Hermes... (${s}s)`
+                : `Still waiting for the oracle (${s}s)… make sure the oracle service is running.`,
+            );
+          },
+        },
+      );
+      if (!fulfilled) throw new Error(ORACLE_TIMEOUT_MESSAGE);
 
       setState("decrypting");
       setCurrentStep("Unsealing your encrypted signal...");

@@ -24,12 +24,21 @@ export async function getTradingContract(): Promise<Contract> {
 /** Poll a predicate until true or timeout — used to await oracle fulfillment. */
 export async function pollUntil(
   check: () => Promise<boolean>,
-  { timeoutMs = 120000, intervalMs = 4000 }: { timeoutMs?: number; intervalMs?: number } = {},
+  {
+    timeoutMs = 90000,
+    intervalMs = 4000,
+    onWait,
+  }: { timeoutMs?: number; intervalMs?: number; onWait?: (elapsedMs: number) => void } = {},
 ): Promise<boolean> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     if (await check()) return true;
+    onWait?.(Date.now() - start);
     await new Promise((r) => setTimeout(r, intervalMs));
   }
   return false;
 }
+
+/** Message shown when the oracle never fulfills (the usual "it just spins" cause). */
+export const ORACLE_TIMEOUT_MESSAGE =
+  "No response from the oracle. The encrypted request was submitted on-chain, but the oracle service must be running to process it. Start it in a terminal with `npm run oracle` (keep it open), then try again.";
