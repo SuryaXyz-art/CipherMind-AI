@@ -6,10 +6,7 @@
  * the encrypted domain — the oracle only sends anonymized band categories.
  */
 
-import OpenAI from "openai";
-import * as dotenv from "dotenv";
-
-dotenv.config({ path: "../.env" });
+import { nousChat } from "./nousClient";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -77,13 +74,6 @@ export function anonymizeFeatures(
 
 // ── AI Inference ─────────────────────────────────────────────────────────
 
-const client = new OpenAI({
-  apiKey: process.env.NOUS_API_KEY || "",
-  baseURL: process.env.NOUS_API_BASE_URL || "https://openrouter.ai/api/v1",
-});
-
-const MODEL = process.env.NOUS_MODEL || "nousresearch/hermes-4-70b";
-
 const SYSTEM_PROMPT = `You are CipherMind Credit Analyst, a privacy-preserving AI credit scoring engine.
 
 You receive ANONYMIZED feature bands (not raw numbers) about a user's financial profile.
@@ -112,21 +102,11 @@ export async function generateCreditScore(
 Provide a credit score (300-850), confidence level (0-100), and brief reasoning.`;
 
   try {
-    const completion = await client.chat.completions.create({
-      model: MODEL,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userMessage },
-      ],
+    const response = await nousChat(SYSTEM_PROMPT, userMessage, {
       temperature: 0.3,
-      max_tokens: 300,
-      response_format: { type: "json_object" },
+      maxTokens: 300,
+      json: true,
     });
-
-    const response = completion.choices[0]?.message?.content;
-    if (!response) {
-      throw new Error("Empty response from Nous Hermes AI");
-    }
 
     const parsed = JSON.parse(response) as CreditScoreResult;
 

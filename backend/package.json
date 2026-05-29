@@ -4,17 +4,12 @@
   "description": "CipherMind AI Oracle — Off-chain Nous Hermes bridge for FHE contracts",
   "main": "dist/oracle.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/oracle.js",
-    "dev": "ts-node oracle.ts",
-    "dev:credit": "ts-node creditScorer.ts",
-    "dev:trading": "ts-node tradingSignal.ts"
+    "info": "ts-node oracle.ts"
   },
   "dependencies": {
     "ethers": "^6.4.0",
     "@cofhe/sdk": "^0.4.0",
-    "dotenv": "^16.4.7",
-    "openai": "^4.40.0"
+    "dotenv": "^16.4.7"
   },
   "devDependencies": {
     "@types/node": ">=18.0.0",

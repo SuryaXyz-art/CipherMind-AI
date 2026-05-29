@@ -304,6 +304,7 @@ function CreditPage({ isConnected, onConnect, credit }: CreditPageProps) {
                 {credit.state === 'complete' && credit.result && (
                   <div>
                     <CreditScoreResult score={credit.result.score} confidence={credit.result.confidence} status={credit.result.status} />
+                    <CreditFeatures credit={credit} />
                     <button className="btn btn-secondary w-full mt-4" onClick={credit.reset} id="reset-credit">
                       <IconRefresh size={16} /> Run Another Analysis
                     </button>
@@ -390,6 +391,7 @@ function TradingPage({ isConnected, onConnect, trading }: TradingPageProps) {
                 {trading.state === 'complete' && trading.result && (
                   <div>
                     <TradingSignalResult direction={trading.result.direction} strength={trading.result.strength} riskLevel={trading.result.riskLevel} suggestedEntry={trading.result.suggestedEntry} />
+                    <TradingFeatures trading={trading} />
                     <button className="btn btn-secondary w-full mt-4" onClick={trading.reset} id="reset-trading">
                       <IconRefresh size={16} /> Generate Another Signal
                     </button>
@@ -634,6 +636,130 @@ function ResearchPage({ isConnected, onConnect, research }: ResearchPageProps) {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Confidential Credit Features ─────────────────────────────────────────────
+
+function CreditFeatures({ credit }: { credit: ReturnType<typeof useCredit> }) {
+  const [thresholdInput, setThresholdInput] = useState('700');
+  const [viewerInput, setViewerInput] = useState('');
+
+  return (
+    <div className="card mt-4" style={{ padding: '20px' }}>
+      <div className="flex items-center gap-2 mb-4">
+        <IconLock size={15} color="var(--cm-accent-1)" />
+        <span className="text-sm" style={{ fontWeight: 600 }}>Confidential actions on your encrypted score</span>
+      </div>
+
+      {/* Benchmark */}
+      <div style={{ marginBottom: '16px' }}>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm text-secondary">Am I above the network average?</span>
+          <button className="btn btn-ghost btn-sm" onClick={() => credit.runBenchmark()} disabled={credit.benchmark.loading} id="run-benchmark">
+            {credit.benchmark.loading ? 'Computing...' : 'Compare (encrypted)'}
+          </button>
+        </div>
+        {credit.benchmark.aboveAverage !== null && (
+          <p className="text-sm mt-2" style={{ color: credit.benchmark.aboveAverage ? 'var(--cm-success)' : 'var(--cm-text-secondary)' }}>
+            {credit.benchmark.aboveAverage ? '✅ Above the encrypted average — no scores were revealed.' : 'ℹ️ At or below the encrypted average — no scores were revealed.'}
+          </p>
+        )}
+        {credit.benchmark.error && <p className="text-xs mt-1" style={{ color: 'var(--cm-danger)' }}>{credit.benchmark.error}</p>}
+      </div>
+
+      {/* Threshold */}
+      <div style={{ marginBottom: '16px' }}>
+        <span className="text-sm text-secondary">Is my score ≥ a private threshold?</span>
+        <div className="flex items-center gap-2 mt-2">
+          <input className="form-input" type="number" value={thresholdInput} onChange={e => setThresholdInput(e.target.value)} style={{ maxWidth: '120px' }} id="threshold-input" />
+          <button className="btn btn-ghost btn-sm" onClick={() => credit.checkThreshold(Number(thresholdInput))} disabled={credit.threshold.loading} id="check-threshold">
+            {credit.threshold.loading ? 'Checking...' : 'Check (encrypted)'}
+          </button>
+        </div>
+        {credit.threshold.meets !== null && (
+          <p className="text-sm mt-2" style={{ color: credit.threshold.meets ? 'var(--cm-success)' : 'var(--cm-text-secondary)' }}>
+            {credit.threshold.meets ? `✅ Your score is ≥ ${credit.threshold.value}` : `❌ Your score is below ${credit.threshold.value}`} (threshold stayed encrypted)
+          </p>
+        )}
+        {credit.threshold.error && <p className="text-xs mt-1" style={{ color: 'var(--cm-danger)' }}>{credit.threshold.error}</p>}
+      </div>
+
+      {/* Passport / selective disclosure */}
+      <div>
+        <span className="text-sm text-secondary">Grant a lender access to your score</span>
+        <div className="flex items-center gap-2 mt-2">
+          <input className="form-input" type="text" placeholder="0x lender address" value={viewerInput} onChange={e => setViewerInput(e.target.value)} style={{ flex: 1, fontFamily: 'var(--cm-font-mono)', fontSize: '0.8rem' }} id="viewer-input" />
+          <button className="btn btn-ghost btn-sm" onClick={() => credit.grantAccess(viewerInput.trim())} disabled={credit.grant.loading || !viewerInput.trim()} id="grant-access">
+            {credit.grant.loading ? 'Granting...' : 'Grant'}
+          </button>
+        </div>
+        {credit.grant.grantedTo && <p className="text-sm mt-2" style={{ color: 'var(--cm-success)' }}>✅ Access granted to {credit.grant.grantedTo.slice(0, 8)}… — only they can now unseal it.</p>}
+        {credit.grant.error && <p className="text-xs mt-1" style={{ color: 'var(--cm-danger)' }}>{credit.grant.error}</p>}
+      </div>
+    </div>
+  );
+}
+
+// ── Confidential Trading Features ────────────────────────────────────────────
+
+function TradingFeatures({ trading }: { trading: ReturnType<typeof useTrading> }) {
+  const [riskInput, setRiskInput] = useState('50');
+  const [viewerInput, setViewerInput] = useState('');
+
+  return (
+    <div className="card mt-4" style={{ padding: '20px' }}>
+      <div className="flex items-center gap-2 mb-4">
+        <IconLock size={15} color="var(--cm-accent-2)" />
+        <span className="text-sm" style={{ fontWeight: 600 }}>Confidential actions on your encrypted signal</span>
+      </div>
+
+      {/* Strength benchmark */}
+      <div style={{ marginBottom: '16px' }}>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm text-secondary">Is my signal confidence above average?</span>
+          <button className="btn btn-ghost btn-sm" onClick={() => trading.runBenchmark()} disabled={trading.benchmark.loading} id="run-trade-benchmark">
+            {trading.benchmark.loading ? 'Computing...' : 'Compare (encrypted)'}
+          </button>
+        </div>
+        {trading.benchmark.aboveAverage !== null && (
+          <p className="text-sm mt-2" style={{ color: trading.benchmark.aboveAverage ? 'var(--cm-success)' : 'var(--cm-text-secondary)' }}>
+            {trading.benchmark.aboveAverage ? '✅ Above the encrypted average confidence — no values revealed.' : 'ℹ️ At or below the encrypted average — no values revealed.'}
+          </p>
+        )}
+        {trading.benchmark.error && <p className="text-xs mt-1" style={{ color: 'var(--cm-danger)' }}>{trading.benchmark.error}</p>}
+      </div>
+
+      {/* Risk threshold */}
+      <div style={{ marginBottom: '16px' }}>
+        <span className="text-sm text-secondary">Is my risk ≥ a private threshold?</span>
+        <div className="flex items-center gap-2 mt-2">
+          <input className="form-input" type="number" value={riskInput} onChange={e => setRiskInput(e.target.value)} style={{ maxWidth: '120px' }} id="risk-threshold-input" />
+          <button className="btn btn-ghost btn-sm" onClick={() => trading.checkRiskThreshold(Number(riskInput))} disabled={trading.riskThreshold.loading} id="check-risk-threshold">
+            {trading.riskThreshold.loading ? 'Checking...' : 'Check (encrypted)'}
+          </button>
+        </div>
+        {trading.riskThreshold.breached !== null && (
+          <p className="text-sm mt-2" style={{ color: trading.riskThreshold.breached ? 'var(--cm-danger)' : 'var(--cm-success)' }}>
+            {trading.riskThreshold.breached ? `⚠️ Risk is ≥ ${trading.riskThreshold.value}` : `✅ Risk is below ${trading.riskThreshold.value}`} (threshold stayed encrypted)
+          </p>
+        )}
+        {trading.riskThreshold.error && <p className="text-xs mt-1" style={{ color: 'var(--cm-danger)' }}>{trading.riskThreshold.error}</p>}
+      </div>
+
+      {/* Selective disclosure */}
+      <div>
+        <span className="text-sm text-secondary">Share this signal with a copy-trader / fund</span>
+        <div className="flex items-center gap-2 mt-2">
+          <input className="form-input" type="text" placeholder="0x viewer address" value={viewerInput} onChange={e => setViewerInput(e.target.value)} style={{ flex: 1, fontFamily: 'var(--cm-font-mono)', fontSize: '0.8rem' }} id="trade-viewer-input" />
+          <button className="btn btn-ghost btn-sm" onClick={() => trading.grantAccess(viewerInput.trim())} disabled={trading.grant.loading || !viewerInput.trim()} id="grant-signal-access">
+            {trading.grant.loading ? 'Granting...' : 'Grant'}
+          </button>
+        </div>
+        {trading.grant.grantedTo && <p className="text-sm mt-2" style={{ color: 'var(--cm-success)' }}>✅ Signal shared with {trading.grant.grantedTo.slice(0, 8)}… — only they can unseal it.</p>}
+        {trading.grant.error && <p className="text-xs mt-1" style={{ color: 'var(--cm-danger)' }}>{trading.grant.error}</p>}
       </div>
     </div>
   );

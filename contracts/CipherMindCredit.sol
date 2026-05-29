@@ -37,6 +37,22 @@ contract CipherMindCredit is Ownable {
     address public oracle;
     uint256 public requestCount;
 
+    // ── Confidential benchmarking ────────────────────────────────────────
+    // The running sum of every user's score stays encrypted; only the public
+    // count is visible. A user can learn whether they're above the network
+    // average without anyone's individual score (or the average) being revealed.
+    euint32 private encryptedScoreSum;
+    uint256 public  benchmarkCount;
+    mapping(address => bool)  public countedInBenchmark;
+    mapping(address => ebool) private aboveAverage;
+    mapping(address => bool)  public benchmarkReady;
+
+    // ── Encrypted threshold alerts ───────────────────────────────────────
+    // "Is my score ≥ X?" answered as an encrypted boolean — X and the score
+    // both stay private; only the caller can unseal the yes/no.
+    mapping(address => ebool) private thresholdResult;
+    mapping(address => bool)  public thresholdReady;
+
     // ── FHE constants ────────────────────────────────────────────────────
     euint32 public SCORE_FLOOR;     // 300
     euint32 public SCORE_CEILING;   // 850
@@ -45,6 +61,9 @@ contract CipherMindCredit is Ownable {
     event CreditRequested(address indexed user, uint256 requestId);
     event CreditFulfilled(address indexed user, uint256 requestId);
     event OracleUpdated(address indexed oldOracle, address indexed newOracle);
+    event BenchmarkComputed(address indexed user);
+    event ThresholdEvaluated(address indexed user);
+    event ScoreAccessGranted(address indexed owner, address indexed viewer);
 
     // ── Errors ───────────────────────────────────────────────────────────
     error NotOracle();
@@ -98,6 +117,14 @@ contract CipherMindCredit is Ownable {
         FHE.allowSender(historyMonths);
         FHE.allowSender(openAccounts);
 
+        // Allow the off-chain oracle to decrypt these features so it can
+        // anonymize them into bands before calling the AI. Without this grant
+        // the oracle has no permit to read the ciphertexts off-chain.
+        FHE.allow(income, oracle);
+        FHE.allow(debtRatio, oracle);
+        FHE.allow(historyMonths, oracle);
+        FHE.allow(openAccounts, oracle);
+
         profiles[msg.sender] = EncryptedProfile({
             income:        income,
             debtRatio:     debtRatio,
@@ -149,6 +176,15 @@ contract CipherMindCredit is Ownable {
             fulfilled:  true
         });
 
+        // Contribute to the confidential benchmark exactly once per user so the
+        // encrypted running average reflects the population, not repeat runs.
+        if (!countedInBenchmark[_user]) {
+            encryptedScoreSum = benchmarkCount == 0 ? score : FHE.add(encryptedScoreSum, score);
+            FHE.allowThis(encryptedScoreSum);
+            countedInBenchmark[_user] = true;
+            benchmarkCount++;
+        }
+
         emit CreditFulfilled(_user, requestCount);
     }
 
@@ -187,6 +223,80 @@ contract CipherMindCredit is Ownable {
         if (!sDecrypted || !cDecrypted) revert ResultNotReady();
 
         return (s, c);
+    }
+
+    // ── Confidential benchmarking ──────────────────────────────────────────
+
+    /**
+     * @notice Learn whether your score is above the encrypted network average —
+     *         without revealing your score, anyone else's, or the average itself.
+     * @dev Compares score * count > sum  ⇔  score > sum/count, avoiding FHE
+     *      division. Stores an encrypted boolean only the caller can unseal.
+     */
+    function requestBenchmarkComparison() external {
+        if (!results[msg.sender].fulfilled) revert ResultNotReady();
+        if (benchmarkCount == 0) revert ResultNotReady();
+
+        euint32 scaledScore = FHE.mul(
+            results[msg.sender].score,
+            FHE.asEuint32(uint32(benchmarkCount))
+        );
+        ebool above = FHE.gt(scaledScore, encryptedScoreSum);
+
+        FHE.allowThis(above);
+        FHE.allow(above, msg.sender);
+
+        aboveAverage[msg.sender] = above;
+        benchmarkReady[msg.sender] = true;
+        emit BenchmarkComputed(msg.sender);
+    }
+
+    /// @notice Encrypted handle of your "above average?" result (unseal off-chain).
+    function getBenchmarkResult() external view returns (ebool) {
+        if (!benchmarkReady[msg.sender]) revert ResultNotReady();
+        return aboveAverage[msg.sender];
+    }
+
+    // ── Encrypted threshold alerts ─────────────────────────────────────────
+
+    /**
+     * @notice Privately check whether your score ≥ an encrypted threshold you
+     *         supply. Both the threshold and the score stay encrypted; the answer
+     *         is an encrypted boolean only you can unseal.
+     */
+    function evaluateScoreThreshold(InEuint32 memory _threshold) external {
+        if (!results[msg.sender].fulfilled) revert ResultNotReady();
+
+        euint32 threshold = FHE.asEuint32(_threshold);
+        ebool meets = FHE.gte(results[msg.sender].score, threshold);
+
+        FHE.allowThis(meets);
+        FHE.allow(meets, msg.sender);
+
+        thresholdResult[msg.sender] = meets;
+        thresholdReady[msg.sender] = true;
+        emit ThresholdEvaluated(msg.sender);
+    }
+
+    /// @notice Encrypted handle of your threshold check (unseal off-chain).
+    function getThresholdResult() external view returns (ebool) {
+        if (!thresholdReady[msg.sender]) revert ResultNotReady();
+        return thresholdResult[msg.sender];
+    }
+
+    // ── Selective-disclosure credit passport ───────────────────────────────
+
+    /**
+     * @notice Grant ONE specific viewer (e.g., a lender) permission to decrypt
+     *         your score and confidence. The data stays encrypted on-chain; the
+     *         viewer unseals it off-chain with their own permit. Composable —
+     *         the viewer can be another contract gating logic on a private score.
+     */
+    function grantScoreAccess(address viewer) external {
+        if (!results[msg.sender].fulfilled) revert ResultNotReady();
+        FHE.allow(results[msg.sender].score, viewer);
+        FHE.allow(results[msg.sender].confidence, viewer);
+        emit ScoreAccessGranted(msg.sender, viewer);
     }
 
     // ── Admin ────────────────────────────────────────────────────────────

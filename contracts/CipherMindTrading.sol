@@ -48,10 +48,24 @@ contract CipherMindTrading is Ownable {
     address public oracle;
     uint256 public totalRequests;
 
+    // ── Confidential benchmarking (on signal strength) ───────────────────
+    euint32 private encryptedStrengthSum;
+    uint256 public  benchmarkCount;
+    mapping(address => bool)  public countedInBenchmark;
+    mapping(address => ebool) private strengthAboveAverage;
+    mapping(address => bool)  public benchmarkReady;
+
+    // ── Encrypted risk threshold alerts ──────────────────────────────────
+    mapping(address => ebool) private riskThresholdResult;
+    mapping(address => bool)  public riskThresholdReady;
+
     // ── Events ───────────────────────────────────────────────────────────
     event SignalRequested(address indexed user, string asset, uint256 requestId);
     event SignalFulfilled(address indexed user, uint256 requestId);
     event OracleUpdated(address indexed oldOracle, address indexed newOracle);
+    event BenchmarkComputed(address indexed user);
+    event RiskThresholdEvaluated(address indexed user);
+    event SignalAccessGranted(address indexed owner, address indexed viewer);
 
     // ── Errors ───────────────────────────────────────────────────────────
     error NotOracle();
@@ -105,6 +119,14 @@ contract CipherMindTrading is Ownable {
         FHE.allowSender(stopLoss);
         FHE.allowSender(takeProfit);
         FHE.allowSender(riskTolerance);
+
+        // Allow the off-chain oracle to decrypt these features so it can
+        // anonymize them into bands before calling the AI.
+        FHE.allow(positionSize, oracle);
+        FHE.allow(entryPrice, oracle);
+        FHE.allow(stopLoss, oracle);
+        FHE.allow(takeProfit, oracle);
+        FHE.allow(riskTolerance, oracle);
 
         positionHistory[msg.sender].push(EncryptedPosition({
             positionSize:  positionSize,
@@ -166,6 +188,14 @@ contract CipherMindTrading is Ownable {
             timestamp:      block.timestamp
         });
 
+        // Contribute signal strength to the confidential benchmark once per user.
+        if (!countedInBenchmark[_user]) {
+            encryptedStrengthSum = benchmarkCount == 0 ? strength : FHE.add(encryptedStrengthSum, strength);
+            FHE.allowThis(encryptedStrengthSum);
+            countedInBenchmark[_user] = true;
+            benchmarkCount++;
+        }
+
         emit SignalFulfilled(_user, totalRequests);
     }
 
@@ -205,6 +235,82 @@ contract CipherMindTrading is Ownable {
      */
     function getPositionCount(address _user) external view returns (uint256) {
         return positionHistory[_user].length;
+    }
+
+    // ── Confidential benchmarking ──────────────────────────────────────────
+
+    /**
+     * @notice Learn whether your signal's confidence (strength) is above the
+     *         encrypted network average — revealing no individual strengths.
+     * @dev strength * count > Σ  ⇔  strength > average. Encrypted boolean only
+     *      the caller can unseal.
+     */
+    function requestStrengthBenchmark() external {
+        if (!latestSignal[msg.sender].fulfilled) revert SignalNotReady();
+        if (benchmarkCount == 0) revert SignalNotReady();
+
+        euint32 scaled = FHE.mul(
+            latestSignal[msg.sender].strength,
+            FHE.asEuint32(uint32(benchmarkCount))
+        );
+        ebool above = FHE.gt(scaled, encryptedStrengthSum);
+
+        FHE.allowThis(above);
+        FHE.allow(above, msg.sender);
+
+        strengthAboveAverage[msg.sender] = above;
+        benchmarkReady[msg.sender] = true;
+        emit BenchmarkComputed(msg.sender);
+    }
+
+    /// @notice Encrypted handle of your "strength above average?" result.
+    function getBenchmarkResult() external view returns (ebool) {
+        if (!benchmarkReady[msg.sender]) revert SignalNotReady();
+        return strengthAboveAverage[msg.sender];
+    }
+
+    // ── Encrypted risk threshold alerts ────────────────────────────────────
+
+    /**
+     * @notice Privately check whether your signal's risk level ≥ an encrypted
+     *         threshold you supply (a private "is this too risky?" alert).
+     *         Both the risk and the threshold stay encrypted.
+     */
+    function evaluateRiskThreshold(InEuint32 memory _threshold) external {
+        if (!latestSignal[msg.sender].fulfilled) revert SignalNotReady();
+
+        euint32 threshold = FHE.asEuint32(_threshold);
+        ebool breached = FHE.gte(latestSignal[msg.sender].riskLevel, threshold);
+
+        FHE.allowThis(breached);
+        FHE.allow(breached, msg.sender);
+
+        riskThresholdResult[msg.sender] = breached;
+        riskThresholdReady[msg.sender] = true;
+        emit RiskThresholdEvaluated(msg.sender);
+    }
+
+    /// @notice Encrypted handle of your risk threshold check (unseal off-chain).
+    function getRiskThresholdResult() external view returns (ebool) {
+        if (!riskThresholdReady[msg.sender]) revert SignalNotReady();
+        return riskThresholdResult[msg.sender];
+    }
+
+    // ── Selective-disclosure signal sharing ─────────────────────────────────
+
+    /**
+     * @notice Grant ONE specific viewer (e.g. a copy-trader or fund) permission
+     *         to decrypt your latest signal. Stays encrypted on-chain; the
+     *         viewer unseals it off-chain with their own permit.
+     */
+    function grantSignalAccess(address viewer) external {
+        TradingSignal storage sig = latestSignal[msg.sender];
+        if (!sig.fulfilled) revert SignalNotReady();
+        FHE.allow(sig.direction, viewer);
+        FHE.allow(sig.strength, viewer);
+        FHE.allow(sig.riskLevel, viewer);
+        FHE.allow(sig.suggestedEntry, viewer);
+        emit SignalAccessGranted(msg.sender, viewer);
     }
 
     // ── Admin ────────────────────────────────────────────────────────────

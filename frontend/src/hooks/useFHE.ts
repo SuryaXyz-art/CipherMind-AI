@@ -1,13 +1,15 @@
 /**
- * useFHE — React hook for Fhenix Client initialization
+ * useFHE — wallet connection + CoFHE client lifecycle.
  *
- * Manages connection state and provides the FhenixClient instance
- * for encrypting/decrypting data on the frontend.
+ * Connects the injected wallet, ensures it's on Arbitrum Sepolia, and primes
+ * the browser CoFHE client (see lib/cofhe.ts). Encryption/decryption helpers
+ * live in lib/cofhe.ts and are used directly by the feature hooks.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from "react";
+import { ARBITRUM_SEPOLIA_ID, ARBITRUM_SEPOLIA_PARAMS } from "../lib/chain";
+import { getCofheClient, resetCofheClient } from "../lib/cofhe";
 
-// Types for FHE state management
 interface FHEState {
   isInitialized: boolean;
   isConnecting: boolean;
@@ -19,15 +21,26 @@ interface FHEState {
 interface UseFHEReturn extends FHEState {
   connect: () => Promise<void>;
   disconnect: () => void;
-  encryptValue: (value: number) => Promise<Uint8Array | null>;
 }
 
-/**
- * Hook to manage FHE client connection and encryption.
- *
- * In production, this would use @cofhe/sdk/web to create a browser-based
- * CoFHE client. For the demo, we simulate the FHE workflow.
- */
+async function ensureArbitrumSepolia(ethereum: any): Promise<void> {
+  const current = parseInt(await ethereum.request({ method: "eth_chainId" }), 16);
+  if (current === ARBITRUM_SEPOLIA_ID) return;
+  try {
+    await ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: ARBITRUM_SEPOLIA_PARAMS.chainId }],
+    });
+  } catch (err: any) {
+    // 4902 = chain not added yet
+    if (err?.code === 4902) {
+      await ethereum.request({ method: "wallet_addEthereumChain", params: [ARBITRUM_SEPOLIA_PARAMS] });
+    } else {
+      throw err;
+    }
+  }
+}
+
 export function useFHE(): UseFHEReturn {
   const [state, setState] = useState<FHEState>({
     isInitialized: false,
@@ -38,124 +51,52 @@ export function useFHE(): UseFHEReturn {
   });
 
   const connect = useCallback(async () => {
-    setState(prev => ({ ...prev, isConnecting: true, error: null }));
-
+    setState((prev) => ({ ...prev, isConnecting: true, error: null }));
     try {
-      // Check for MetaMask/wallet
-      if (typeof window === 'undefined' || !(window as any).ethereum) {
-        throw new Error('No Ethereum wallet detected. Please install MetaMask.');
-      }
-
       const ethereum = (window as any).ethereum;
+      if (!ethereum) throw new Error("No Ethereum wallet detected. Please install MetaMask.");
 
-      // Request accounts
-      const accounts: string[] = await ethereum.request({
-        method: 'eth_requestAccounts',
-      });
+      const accounts: string[] = await ethereum.request({ method: "eth_requestAccounts" });
+      if (!accounts?.length) throw new Error("No accounts found. Please unlock your wallet.");
 
-      if (!accounts || accounts.length === 0) {
-        throw new Error('No accounts found. Please unlock your wallet.');
-      }
+      await ensureArbitrumSepolia(ethereum);
+      const chainId = parseInt(await ethereum.request({ method: "eth_chainId" }), 16);
 
-      // Get chain ID
-      const chainIdHex: string = await ethereum.request({
-        method: 'eth_chainId',
-      });
-      const chainId = parseInt(chainIdHex, 16);
+      // Prime the CoFHE client (connect + self-permit). Surfaces config errors early.
+      await getCofheClient();
 
-      // In production: Initialize CoFHE client here
-      // const config = createCofheConfig({
-      //   environment: 'browser',
-      //   supportedChains: [getChainById(chainId)],
-      // });
-      // const client = createCofheClient(config);
-      // await client.connect(...)
-
-      setState({
-        isInitialized: true,
-        isConnecting: false,
-        error: null,
-        address: accounts[0],
-        chainId,
-      });
-
-      console.log('🔐 FHE Client initialized');
-      console.log(`   Address: ${accounts[0]}`);
-      console.log(`   Chain:   ${chainId}`);
+      setState({ isInitialized: true, isConnecting: false, error: null, address: accounts[0], chainId });
+      console.log("🔐 CoFHE client ready:", accounts[0], "chain", chainId);
     } catch (error: any) {
-      setState(prev => ({
-        ...prev,
-        isConnecting: false,
-        error: error.message || 'Failed to connect',
-      }));
+      resetCofheClient();
+      setState((prev) => ({ ...prev, isConnecting: false, error: error?.message || "Failed to connect" }));
     }
   }, []);
 
   const disconnect = useCallback(() => {
-    setState({
-      isInitialized: false,
-      isConnecting: false,
-      error: null,
-      address: null,
-      chainId: null,
-    });
+    resetCofheClient();
+    setState({ isInitialized: false, isConnecting: false, error: null, address: null, chainId: null });
   }, []);
 
-  /**
-   * Encrypt a numeric value using FHE.
-   * In production: uses CoFHE SDK encryptInputs
-   */
-  const encryptValue = useCallback(async (_value: number): Promise<Uint8Array | null> => {
-    if (!state.isInitialized) {
-      console.error('FHE client not initialized');
-      return null;
-    }
-
-    // In production:
-    // const encrypted = await client.encryptInputs([Encryptable.uint32(BigInt(value))]).execute();
-    // return encrypted[0];
-
-    // Demo: simulate encryption delay
-    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
-
-    // Return a simulated encrypted payload
-    const buffer = new Uint8Array(32);
-    crypto.getRandomValues(buffer);
-    return buffer;
-  }, [state.isInitialized]);
-
-  // Listen for account/chain changes
   useEffect(() => {
-    if (typeof window === 'undefined' || !(window as any).ethereum) return;
-
     const ethereum = (window as any).ethereum;
-
-    const handleAccountsChanged = (accounts: string[]) => {
-      if (accounts.length === 0) {
-        disconnect();
-      } else {
-        setState(prev => ({ ...prev, address: accounts[0] }));
-      }
+    if (!ethereum) return;
+    const onAccounts = (accts: string[]) => {
+      resetCofheClient();
+      if (!accts.length) disconnect();
+      else setState((prev) => ({ ...prev, address: accts[0] }));
     };
-
-    const handleChainChanged = (chainIdHex: string) => {
-      const chainId = parseInt(chainIdHex, 16);
-      setState(prev => ({ ...prev, chainId }));
+    const onChain = (hex: string) => {
+      resetCofheClient();
+      setState((prev) => ({ ...prev, chainId: parseInt(hex, 16) }));
     };
-
-    ethereum.on('accountsChanged', handleAccountsChanged);
-    ethereum.on('chainChanged', handleChainChanged);
-
+    ethereum.on("accountsChanged", onAccounts);
+    ethereum.on("chainChanged", onChain);
     return () => {
-      ethereum.removeListener('accountsChanged', handleAccountsChanged);
-      ethereum.removeListener('chainChanged', handleChainChanged);
+      ethereum.removeListener("accountsChanged", onAccounts);
+      ethereum.removeListener("chainChanged", onChain);
     };
   }, [disconnect]);
 
-  return {
-    ...state,
-    connect,
-    disconnect,
-    encryptValue,
-  };
+  return { ...state, connect, disconnect };
 }

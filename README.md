@@ -61,23 +61,39 @@ VITE_NOUS_API_BASE_URL=https://inference-api.nousresearch.com/v1
 VITE_NOUS_MODEL=nousresearch/hermes-4-70b
 ```
 
-### 3. Installation & Run
-
-Install dependencies for both the project root and frontend:
+### 3. Installation, Deploy & Run
 
 ```bash
-# Install hardhat/contracts/backend dependencies
+# 1. Install root (contracts / oracle / hardhat) deps
 npm install
 
-# Install frontend dependencies
-cd frontend
-npm install
+# 2. Run the test suite (CoFHE mocks — no testnet needed)
+npx hardhat test          # 36 passing: contracts, real oracle loop, FHE features, agentic research
 
-# Run the frontend natively
-npm run dev
+# 3. Deploy contracts to Arbitrum Sepolia
+npx hardhat deploy-credit  --network arb-sepolia
+npx hardhat deploy-trading --network arb-sepolia
+#   → copy the printed addresses into .env (CREDIT_CONTRACT_ADDRESS / TRADING_CONTRACT_ADDRESS)
+#     and into frontend/.env (VITE_CREDIT_ADDRESS / VITE_TRADING_ADDRESS)
+
+# 4. Start the off-chain oracle (decrypt → anonymize → Nous Hermes → encrypt → fulfill)
+npm run oracle             # = hardhat oracle --network arb-sepolia
+#   For a fully local run instead: `npm run localcofhe:start` then `npm run oracle:local`
+
+# 5. Run the frontend
+cd frontend && npm install && npm run dev
 ```
 
-Visit `http://localhost:5173` to interact with the CipherMind Dashboard!
+Visit `http://localhost:5173`, connect MetaMask (it will prompt to add/switch to Arbitrum Sepolia), and use the dashboard.
+
+> **How the real flow works:** the browser encrypts your inputs with CoFHE (`@cofhe/sdk/web`) and submits ciphertext on-chain. The oracle — the only party `FHE.allow`'d to read it — decrypts via its permit, anonymizes into bands, asks Nous Hermes, then writes an **encrypted** result back. Only you can unseal it.
+
+### Confidential features (all on encrypted data)
+
+- **Benchmarking** — `requestBenchmarkComparison()`: learn if you're above the encrypted network average without revealing any score (`score×count > Σ` to avoid FHE division).
+- **Threshold alerts** — `evaluateScoreThreshold(InEuint32)`: "is my score ≥ X?" as an encrypted boolean; X stays private.
+- **Selective disclosure** — `grantScoreAccess(viewer)`: grant exactly one lender/contract the right to unseal your score.
+- **Hermes agentic research** — multi-step tool-calling agent (`backend/researchAgent.ts`, mirrored in the browser) that gathers facts before answering.
 
 ---
 

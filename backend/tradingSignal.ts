@@ -6,10 +6,7 @@
  * reveals exact user positions — only relative risk/reward characteristics.
  */
 
-import OpenAI from "openai";
-import * as dotenv from "dotenv";
-
-dotenv.config({ path: "../.env" });
+import { nousChat } from "./nousClient";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -89,13 +86,6 @@ export function anonymizeTradingFeatures(
 
 // ── AI Inference ─────────────────────────────────────────────────────────
 
-const client = new OpenAI({
-  apiKey: process.env.NOUS_API_KEY || "",
-  baseURL: process.env.NOUS_API_BASE_URL || "https://openrouter.ai/api/v1",
-});
-
-const MODEL = process.env.NOUS_MODEL || "nousresearch/hermes-4-70b";
-
 const SYSTEM_PROMPT = `You are CipherMind Trading Analyst, a privacy-preserving AI trading signal engine.
 
 You receive ANONYMIZED position characteristics (not exact numbers) and an asset symbol.
@@ -127,21 +117,11 @@ export async function generateTradingSignal(
 Provide a trading signal with direction, strength, risk level, and entry adjustment.`;
 
   try {
-    const completion = await client.chat.completions.create({
-      model: MODEL,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userMessage },
-      ],
+    const response = await nousChat(SYSTEM_PROMPT, userMessage, {
       temperature: 0.4,
-      max_tokens: 400,
-      response_format: { type: "json_object" },
+      maxTokens: 400,
+      json: true,
     });
-
-    const response = completion.choices[0]?.message?.content;
-    if (!response) {
-      throw new Error("Empty response from Nous Hermes AI");
-    }
 
     const parsed = JSON.parse(response) as TradingSignalResult;
 
