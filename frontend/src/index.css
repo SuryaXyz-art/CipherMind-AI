@@ -68,10 +68,14 @@
   /* Font */
   --cm-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --cm-font-mono: 'JetBrains Mono', monospace;
+
+  /* Theme-aware navbar surface */
+  --cm-navbar-bg: rgba(10, 11, 15, 0.72);
 }
 
 /* ── Light theme (manual toggle: <html data-theme="light">) ───────────── */
 [data-theme="light"] {
+  --cm-navbar-bg: rgba(247, 248, 251, 0.78);
   --cm-bg-primary: #f7f8fb;
   --cm-bg-secondary: #eef1f6;
   --cm-bg-tertiary: #e6e9f0;
@@ -191,7 +195,7 @@ h4 { font-size: 1.25rem; }
   z-index: 100;
   padding: 16px 0;
   backdrop-filter: blur(20px) saturate(1.5);
-  background: rgba(10, 11, 15, 0.8);
+  background: var(--cm-navbar-bg);
   border-bottom: 1px solid var(--cm-glass-border);
   transition: var(--cm-transition-base);
 }
@@ -843,4 +847,89 @@ h4 { font-size: 1.25rem; }
   .container { padding: 0 16px; }
   .score-circle { width: 160px; height: 160px; }
   .score-value { font-size: 2.5rem; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Professional polish layer
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Ambient depth: subtle brand glow + fine grid behind everything */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    var(--cm-gradient-glow),
+    linear-gradient(var(--cm-glass-border) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, var(--cm-glass-border) 1px, transparent 1px) 0 0 / 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 75%);
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 0%, transparent 75%);
+  opacity: 0.5;
+}
+
+/* Accessible, on-brand focus rings */
+a:focus-visible, button:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible, .navbar-link:focus-visible {
+  outline: 2px solid var(--cm-accent-1);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
+/* Inputs: clear focus affordance */
+.form-input:focus, .form-select:focus, textarea.form-input:focus {
+  border-color: var(--cm-border-accent);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.12);
+  outline: none;
+}
+
+/* Surfaces grid: equal-height, refined cards */
+.grid-3 > .card, .grid-2 > .card { height: 100%; }
+.card h3 { letter-spacing: -0.01em; }
+
+/* Sealed-amount motif (████ ciphertext display) */
+.sealed {
+  font-family: var(--cm-font-mono);
+  letter-spacing: 0.12em;
+  color: var(--cm-text-tertiary);
+}
+
+/* Badges: tighter, more premium */
+.badge {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.68rem;
+}
+
+/* Buttons: refined disabled state */
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn:disabled::after { opacity: 0; }
+
+/* Smooth, consistent card lift already exists; refine shadow on light */
+[data-theme="light"] .card:hover { box-shadow: var(--cm-shadow-lg); }
+
+/* Mobile: keep navigation usable instead of hiding it */
+@media (max-width: 768px) {
+  .navbar-nav {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    max-width: 56vw;
+  }
+  .navbar-nav::-webkit-scrollbar { display: none; }
+  .navbar-link { padding: 6px 10px; font-size: 0.8rem; white-space: nowrap; }
+  .navbar-logo-text { display: none; }
+  .dashboard { padding-top: 72px; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
