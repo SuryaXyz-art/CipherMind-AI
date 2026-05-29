@@ -20,6 +20,7 @@ import { useAgents } from './hooks/useAgents';
 import { AGENTS } from './lib/agents';
 import { useRealtime } from './hooks/useRealtime';
 import { useWalletIntel } from './hooks/useWalletIntel';
+import { useAutomation } from './hooks/useAutomation';
 import { CreditForm, TradingForm } from './components/EncryptForm';
 import { EncryptAnimation } from './components/EncryptAnimation';
 import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
@@ -29,7 +30,7 @@ import {
   IconAlertCircle, IconRefresh, IconEye, IconZap,
 } from './components/Icons';
 
-type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'live' | 'wallet' | 'credit' | 'trading' | 'research';
+type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'live' | 'wallet' | 'automation' | 'credit' | 'trading' | 'research';
 
 function useTheme(): ['dark' | 'light', () => void] {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -66,6 +67,7 @@ function App() {
   const agents = useAgents();
   const realtime = useRealtime(page === 'live');
   const walletIntel = useWalletIntel();
+  const automation = useAutomation();
 
   return (
     <>
@@ -94,6 +96,7 @@ function App() {
               { id: 'agents', label: 'Agents' },
               { id: 'live', label: 'Live' },
               { id: 'wallet', label: 'Wallet' },
+              { id: 'automation', label: 'Automation' },
               { id: 'credit', label: 'Credit Score' },
               { id: 'trading', label: 'Trading Signals' },
               { id: 'research', label: 'Research' },
@@ -155,6 +158,7 @@ function App() {
       {page === 'agents' && <AgentsPage agents={agents} />}
       {page === 'live' && <LiveIntelPage realtime={realtime} />}
       {page === 'wallet' && <WalletPage isConnected={fhe.isInitialized} onConnect={fhe.connect} wallet={walletIntel} />}
+      {page === 'automation' && <AutomationPage isConnected={fhe.isInitialized} onConnect={fhe.connect} automation={automation} />}
       {page === 'credit' && <CreditPage isConnected={fhe.isInitialized} onConnect={fhe.connect} credit={credit} />}
       {page === 'trading' && <TradingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} trading={trading} />}
       {page === 'research' && <ResearchPage isConnected={fhe.isInitialized} onConnect={fhe.connect} research={research} />}
@@ -355,6 +359,19 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
                 dangerous allowances in one click — all from on-chain reads.
               </p>
               <div className="flex gap-2"><span className="badge badge-accent">Security</span><span className="badge badge-info">On-chain</span><span className="badge badge-warning">New</span></div>
+            </div>
+
+            {/* Autonomous Actions */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('automation')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(123,97,255,0.15), rgba(34,197,94,0.15))', border: '1px solid rgba(123,97,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconCpu size={28} color="#7b61ff" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Autonomous Actions</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                The AI proposes and simulates portfolio actions; a safety harness
+                (approval mode, spending limits, emergency stop) gates execution.
+              </p>
+              <div className="flex gap-2"><span className="badge badge-accent">Agentic</span><span className="badge badge-info">Safe-exec</span><span className="badge badge-warning">New</span></div>
             </div>
 
             {/* Credit Scoring */}
@@ -1575,6 +1592,103 @@ function WalletPage({ isConnected, onConnect, wallet }: { isConnected: boolean; 
           <div className="card text-center" style={{ padding: '48px 24px' }}>
             <div style={{ margin: '0 auto 16px', opacity: 0.3 }}><IconShield size={48} /></div>
             <p className="text-secondary">Click <strong>Scan wallet</strong> to analyze your exposure and approvals.</p>
+          </div>
+        )}
+
+      </div></div>
+    </div></div>
+  );
+}
+
+// ── Autonomous Actions Page ──────────────────────────────────────────────────
+
+function AutomationPage({ isConnected, onConnect, automation }: { isConnected: boolean; onConnect: () => void; automation: ReturnType<typeof useAutomation> }) {
+  const [goal, setGoal] = useState('Reduce risk: move some exposure toward stablecoins');
+  const [recipient, setRecipient] = useState('');
+  const a = automation;
+
+  if (!isConnected) return <ConnectGate title="Autonomous Actions" onConnect={onConnect} icon={<IconCpu size={28} color="var(--cm-accent-1)" />} />;
+
+  const auditColor = (s: string) => (s === 'executed' ? 'var(--cm-success)' : s === 'failed' ? 'var(--cm-danger)' : 'var(--cm-warning)');
+
+  return (
+    <div className="dashboard"><div className="container">
+      <SurfaceHeader icon={<IconCpu size={22} color="var(--cm-accent-1)" />} title="Autonomous Actions" subtitle="The AI proposes actions toward your goal; every one is simulated and must clear the safety harness before it can execute." />
+      <div className="dashboard-content"><div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+
+        {/* Safety harness */}
+        <div className="card" style={{ marginBottom: '16px', borderColor: a.safety.emergencyStop ? 'var(--cm-danger)' : 'var(--cm-border)' }}>
+          <div className="flex items-center gap-2 mb-4"><IconShield size={16} color="var(--cm-accent-1)" /><span className="text-sm" style={{ fontWeight: 600 }}>Safety harness</span></div>
+          <div className="grid-4" style={{ gap: '12px' }}>
+            <label className="text-sm text-secondary">Approval mode
+              <div><button className={`btn btn-sm ${a.safety.approvalMode ? 'btn-primary' : 'btn-secondary'}`} onClick={() => a.setSafetyField('approvalMode', !a.safety.approvalMode)} style={{ marginTop: 6 }}>{a.safety.approvalMode ? 'Required' : 'Off'}</button></div>
+            </label>
+            <label className="text-sm text-secondary">Spending limit (USDC)
+              <input className="form-input" type="number" value={a.safety.spendingLimit} onChange={(e) => a.setSafetyField('spendingLimit', Number(e.target.value))} style={{ marginTop: 6, width: '100%' }} />
+            </label>
+            <label className="text-sm text-secondary">Risk threshold
+              <input className="form-input" type="number" value={a.safety.riskThreshold} onChange={(e) => a.setSafetyField('riskThreshold', Number(e.target.value))} style={{ marginTop: 6, width: '100%' }} />
+            </label>
+            <label className="text-sm text-secondary">Emergency stop
+              <div><button className={`btn btn-sm ${a.safety.emergencyStop ? 'btn-primary' : 'btn-ghost'}`} onClick={() => a.setSafetyField('emergencyStop', !a.safety.emergencyStop)} style={{ marginTop: 6, ...(a.safety.emergencyStop ? { background: 'var(--cm-danger)' } : { border: '1px solid var(--cm-danger)', color: 'var(--cm-danger)' }) }}>{a.safety.emergencyStop ? 'STOPPED' : 'Armed'}</button></div>
+            </label>
+          </div>
+        </div>
+
+        {/* Goal */}
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <div className="flex items-center gap-2 mb-2"><IconZap size={16} color="var(--cm-accent-1)" /><span className="text-sm" style={{ fontWeight: 600 }}>Strategy goal</span></div>
+          <div className="flex items-center gap-2">
+            <input className="form-input" value={goal} onChange={(e) => setGoal(e.target.value)} style={{ flex: 1 }} />
+            <button className="btn btn-primary btn-sm" onClick={() => a.plan(goal, '')} disabled={a.planning}>{a.planning ? 'Planning…' : 'Plan actions'}</button>
+          </div>
+          {a.summary && <p className="text-sm text-secondary mt-2">{a.summary}</p>}
+          {a.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{a.error}</p>}
+        </div>
+
+        {/* Proposed actions */}
+        {a.actions.length > 0 && (
+          <div className="card" style={{ marginBottom: '16px' }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3>Proposed actions (simulation)</h3>
+              <input className="form-input" placeholder="0x recipient for execution" value={recipient} onChange={(e) => setRecipient(e.target.value)} style={{ maxWidth: '260px', fontFamily: 'var(--cm-font-mono)', fontSize: '0.75rem' }} />
+            </div>
+            <div className="flex flex-col gap-3">
+              {a.actions.map((act) => {
+                const chk = a.check(act);
+                return (
+                  <div key={act.id} style={{ padding: '12px', background: 'var(--cm-bg-secondary)', borderRadius: 'var(--cm-radius-md)' }}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="badge badge-accent" style={{ textTransform: 'uppercase' }}>{act.type}</span>
+                        <span className="text-sm" style={{ fontWeight: 600, marginLeft: 8 }}>{act.amount > 0 ? `${act.amount} USDC` : '—'}</span>
+                        <span className="text-xs font-mono text-muted" style={{ marginLeft: 8 }}>risk {act.risk}</span>
+                      </div>
+                      <button className="btn btn-primary btn-sm" disabled={!chk.allowed || a.executingId === act.id} onClick={() => a.execute(act, recipient)}>
+                        {a.executingId === act.id ? 'Executing…' : a.safety.approvalMode ? 'Approve & Execute' : 'Execute'}
+                      </button>
+                    </div>
+                    <p className="text-sm text-secondary" style={{ marginTop: '6px' }}>{act.rationale}</p>
+                    {!chk.allowed && <p className="text-xs mt-1" style={{ color: 'var(--cm-warning)' }}>🔒 {chk.reasons.join(' ')}</p>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Audit log */}
+        {a.audit.length > 0 && (
+          <div className="card">
+            <div className="flex items-center gap-2 mb-4"><IconEye size={14} color="var(--cm-text-tertiary)" /><span className="text-xs text-muted" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>Execution audit log</span></div>
+            <div className="flex flex-col gap-2">
+              {a.audit.map((e, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  <span style={{ color: auditColor(e.status), fontWeight: 600, textTransform: 'uppercase', fontSize: '0.7rem', minWidth: 70 }}>{e.status}</span>
+                  <span className="text-secondary">{e.text}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
