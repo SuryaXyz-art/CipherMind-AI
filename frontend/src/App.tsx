@@ -19,6 +19,7 @@ import { useEscrow } from './hooks/useEscrow';
 import { useAgents } from './hooks/useAgents';
 import { AGENTS } from './lib/agents';
 import { useRealtime } from './hooks/useRealtime';
+import { useWalletIntel } from './hooks/useWalletIntel';
 import { CreditForm, TradingForm } from './components/EncryptForm';
 import { EncryptAnimation } from './components/EncryptAnimation';
 import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
@@ -28,7 +29,7 @@ import {
   IconAlertCircle, IconRefresh, IconEye, IconZap,
 } from './components/Icons';
 
-type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'live' | 'credit' | 'trading' | 'research';
+type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'live' | 'wallet' | 'credit' | 'trading' | 'research';
 
 function useTheme(): ['dark' | 'light', () => void] {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -64,6 +65,7 @@ function App() {
   const escrow = useEscrow();
   const agents = useAgents();
   const realtime = useRealtime(page === 'live');
+  const walletIntel = useWalletIntel();
 
   return (
     <>
@@ -91,6 +93,7 @@ function App() {
               { id: 'escrow', label: 'Escrow' },
               { id: 'agents', label: 'Agents' },
               { id: 'live', label: 'Live' },
+              { id: 'wallet', label: 'Wallet' },
               { id: 'credit', label: 'Credit Score' },
               { id: 'trading', label: 'Trading Signals' },
               { id: 'research', label: 'Research' },
@@ -151,6 +154,7 @@ function App() {
       {page === 'escrow' && <EscrowPage isConnected={fhe.isInitialized} onConnect={fhe.connect} escrow={escrow} />}
       {page === 'agents' && <AgentsPage agents={agents} />}
       {page === 'live' && <LiveIntelPage realtime={realtime} />}
+      {page === 'wallet' && <WalletPage isConnected={fhe.isInitialized} onConnect={fhe.connect} wallet={walletIntel} />}
       {page === 'credit' && <CreditPage isConnected={fhe.isInitialized} onConnect={fhe.connect} credit={credit} />}
       {page === 'trading' && <TradingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} trading={trading} />}
       {page === 'research' && <ResearchPage isConnected={fhe.isInitialized} onConnect={fhe.connect} research={research} />}
@@ -338,6 +342,19 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
                 tokens — with a Hermes read of the live snapshot.
               </p>
               <div className="flex gap-2"><span className="badge badge-accent">Realtime</span><span className="badge badge-info">Market</span><span className="badge badge-warning">New</span></div>
+            </div>
+
+            {/* Wallet Intelligence */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('wallet')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(245,158,11,0.15))', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconShield size={28} color="#ef4444" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Wallet Intelligence</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                Scan your exposure and token approvals, score risk, and revoke
+                dangerous allowances in one click — all from on-chain reads.
+              </p>
+              <div className="flex gap-2"><span className="badge badge-accent">Security</span><span className="badge badge-info">On-chain</span><span className="badge badge-warning">New</span></div>
             </div>
 
             {/* Credit Scoring */}
@@ -1474,6 +1491,92 @@ function LiveIntelPage({ realtime }: { realtime: ReturnType<typeof useRealtime> 
         <p className="text-xs text-muted" style={{ marginTop: '16px', textAlign: 'center' }}>
           Powered by public RPC + CoinGecko free API. Add a streaming provider key for push WebSockets and whale/smart-money tracking.
         </p>
+
+      </div></div>
+    </div></div>
+  );
+}
+
+// ── Wallet Intelligence Page ─────────────────────────────────────────────────
+
+function WalletPage({ isConnected, onConnect, wallet }: { isConnected: boolean; onConnect: () => void; wallet: ReturnType<typeof useWalletIntel> }) {
+  if (!isConnected) return <ConnectGate title="Wallet Intelligence" onConnect={onConnect} icon={<IconShield size={28} color="var(--cm-accent-1)" />} />;
+
+  const riskColor = wallet.risk
+    ? (wallet.risk.level === 'Low' ? 'var(--cm-success)' : wallet.risk.level === 'Moderate' ? 'var(--cm-warning)' : 'var(--cm-danger)')
+    : 'var(--cm-text-secondary)';
+
+  return (
+    <div className="dashboard"><div className="container">
+      <SurfaceHeader icon={<IconShield size={22} color="var(--cm-accent-1)" />} title="Wallet Intelligence" subtitle="Scan your exposure and token approvals, score risk, and revoke dangerous allowances — all from on-chain reads." />
+      <div className="dashboard-content"><div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+
+        <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+          <p className="text-secondary text-sm">Reads your connected wallet via the public RPC. Nothing leaves your device.</p>
+          <button className="btn btn-primary btn-sm" onClick={() => wallet.scan()} disabled={wallet.scanning}>{wallet.scanning ? 'Scanning…' : 'Scan wallet'}</button>
+        </div>
+        {wallet.error && <p className="text-xs" style={{ color: 'var(--cm-danger)', marginBottom: '12px' }}>{wallet.error}</p>}
+
+        {wallet.portfolio && (
+          <>
+            {/* Exposure + risk */}
+            <div className="grid-3" style={{ gap: '12px', marginBottom: '16px' }}>
+              <Stat label="ETH" value={`${wallet.portfolio.eth.toFixed(4)}`} />
+              <Stat label="mUSDC" value={`${wallet.portfolio.usdc}`} />
+              <div style={{ textAlign: 'center', padding: '12px', background: 'var(--cm-bg-secondary)', borderRadius: 'var(--cm-radius-md)' }}>
+                <p className="text-xs text-muted" style={{ marginBottom: '4px' }}>Risk score</p>
+                <div style={{ fontFamily: 'var(--cm-font-mono)', fontSize: '1.25rem', fontWeight: 700, color: riskColor }}>
+                  {wallet.risk ? `${wallet.risk.score} · ${wallet.risk.level}` : '—'}
+                </div>
+              </div>
+            </div>
+
+            {/* Approval scanner */}
+            <div className="card" style={{ marginBottom: '16px' }}>
+              <h3 style={{ marginBottom: '12px' }}>Approval scanner</h3>
+              {wallet.approvals.length === 0 ? (
+                <p className="text-sm text-secondary">No active approvals on the tracked token — clean. ✅</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {wallet.approvals.map((a, i) => (
+                    <div key={i} className="flex items-center justify-between" style={{ padding: '10px 12px', background: 'var(--cm-bg-secondary)', borderRadius: 'var(--cm-radius-md)' }}>
+                      <div>
+                        <div className="text-sm" style={{ fontWeight: 600 }}>{a.tokenSymbol} → {a.spenderName} {a.unlimited && <span className="badge badge-danger" style={{ marginLeft: 6 }}>Unlimited</span>}{!a.isContract && <span className="badge badge-warning" style={{ marginLeft: 6 }}>Non-contract</span>}</div>
+                        <div className="text-xs font-mono text-muted">allowance: {a.allowance} · {a.spender.slice(0, 10)}…</div>
+                      </div>
+                      <button className="btn btn-ghost btn-sm" onClick={() => wallet.revoke(a.spender)} disabled={wallet.revoking === a.spender}>{wallet.revoking === a.spender ? 'Revoking…' : 'Revoke'}</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Risk notes + AI */}
+            <div className="grid-2" style={{ alignItems: 'start' }}>
+              <div className="card">
+                <h4 style={{ marginBottom: '8px' }}>Findings</h4>
+                {wallet.risk?.notes.map((n, i) => <p key={i} className="text-sm text-secondary" style={{ marginBottom: '6px' }}>• {n}</p>)}
+              </div>
+              <div className="card">
+                <div className="flex items-center justify-between mb-2">
+                  <h4>AI security read</h4>
+                  <button className="btn btn-ghost btn-sm" onClick={() => wallet.generateSummary()} disabled={wallet.summaryLoading}>{wallet.summaryLoading ? 'Reading…' : 'Generate'}</button>
+                </div>
+                <p className="text-sm text-secondary" style={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{wallet.summary || 'Run an AI read of your wallet posture.'}</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted" style={{ marginTop: '16px', textAlign: 'center' }}>
+              Tracks the CipherMind token + known spenders. Full multi-token portfolio, whale exposure, and rug-pull detection need an indexer/data provider.
+            </p>
+          </>
+        )}
+
+        {!wallet.portfolio && !wallet.scanning && (
+          <div className="card text-center" style={{ padding: '48px 24px' }}>
+            <div style={{ margin: '0 auto 16px', opacity: 0.3 }}><IconShield size={48} /></div>
+            <p className="text-secondary">Click <strong>Scan wallet</strong> to analyze your exposure and approvals.</p>
+          </div>
+        )}
 
       </div></div>
     </div></div>
