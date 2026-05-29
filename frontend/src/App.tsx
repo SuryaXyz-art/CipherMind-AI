@@ -18,6 +18,7 @@ import { useCrowdfund } from './hooks/useCrowdfund';
 import { useEscrow } from './hooks/useEscrow';
 import { useAgents } from './hooks/useAgents';
 import { AGENTS } from './lib/agents';
+import { useRealtime } from './hooks/useRealtime';
 import { CreditForm, TradingForm } from './components/EncryptForm';
 import { EncryptAnimation } from './components/EncryptAnimation';
 import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
@@ -27,7 +28,7 @@ import {
   IconAlertCircle, IconRefresh, IconEye, IconZap,
 } from './components/Icons';
 
-type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'credit' | 'trading' | 'research';
+type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'live' | 'credit' | 'trading' | 'research';
 
 function useTheme(): ['dark' | 'light', () => void] {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -62,6 +63,7 @@ function App() {
   const crowdfund = useCrowdfund();
   const escrow = useEscrow();
   const agents = useAgents();
+  const realtime = useRealtime(page === 'live');
 
   return (
     <>
@@ -88,6 +90,7 @@ function App() {
               { id: 'crowdfund', label: 'Crowdfund' },
               { id: 'escrow', label: 'Escrow' },
               { id: 'agents', label: 'Agents' },
+              { id: 'live', label: 'Live' },
               { id: 'credit', label: 'Credit Score' },
               { id: 'trading', label: 'Trading Signals' },
               { id: 'research', label: 'Research' },
@@ -147,6 +150,7 @@ function App() {
       {page === 'crowdfund' && <CrowdfundPage isConnected={fhe.isInitialized} onConnect={fhe.connect} crowdfund={crowdfund} />}
       {page === 'escrow' && <EscrowPage isConnected={fhe.isInitialized} onConnect={fhe.connect} escrow={escrow} />}
       {page === 'agents' && <AgentsPage agents={agents} />}
+      {page === 'live' && <LiveIntelPage realtime={realtime} />}
       {page === 'credit' && <CreditPage isConnected={fhe.isInitialized} onConnect={fhe.connect} credit={credit} />}
       {page === 'trading' && <TradingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} trading={trading} />}
       {page === 'research' && <ResearchPage isConnected={fhe.isInitialized} onConnect={fhe.connect} research={research} />}
@@ -321,6 +325,19 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
                 reasoning trace.
               </p>
               <div className="flex gap-2"><span className="badge badge-accent">Multi-agent</span><span className="badge badge-info">Hermes</span><span className="badge badge-warning">New</span></div>
+            </div>
+
+            {/* Live Intelligence */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('live')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(0,212,255,0.15))', border: '1px solid rgba(245,158,11,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconZap size={28} color="#f59e0b" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Live Intelligence</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                Real-time chain stats, market tickers, volatility and trending
+                tokens — with a Hermes read of the live snapshot.
+              </p>
+              <div className="flex gap-2"><span className="badge badge-accent">Realtime</span><span className="badge badge-info">Market</span><span className="badge badge-warning">New</span></div>
             </div>
 
             {/* Credit Scoring */}
@@ -1370,6 +1387,93 @@ function AgentsPage({ agents }: { agents: ReturnType<typeof useAgents> }) {
             </div>
           </div>
         )}
+
+      </div></div>
+    </div></div>
+  );
+}
+
+// ── Live Intelligence Page ───────────────────────────────────────────────────
+
+function LiveIntelPage({ realtime }: { realtime: ReturnType<typeof useRealtime> }) {
+  const { chain, tickers, trending, signals, error, insight, insightLoading, refreshInsight } = realtime;
+  const changeColor = (v: number) => (v > 0 ? 'var(--cm-success)' : v < 0 ? 'var(--cm-danger)' : 'var(--cm-text-secondary)');
+
+  return (
+    <div className="dashboard"><div className="container">
+      <SurfaceHeader
+        icon={<IconZap size={22} color="var(--cm-accent-1)" />}
+        title="Live Intelligence"
+        subtitle="Real-time on-chain + market signals from public sources, with an AI read of the snapshot."
+      />
+      <div className="dashboard-content"><div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+
+        {/* Chain status */}
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="thinking-dot" />
+            <span className="text-sm" style={{ fontWeight: 600 }}>Arbitrum Sepolia · live (5s)</span>
+            {error && <span className="text-xs" style={{ color: 'var(--cm-danger)', marginLeft: 'auto' }}>{error}</span>}
+          </div>
+          <div className="grid-3" style={{ gap: '12px' }}>
+            <Stat label="Block" value={chain ? `#${chain.blockNumber}` : '…'} />
+            <Stat label="Gas (gwei)" value={chain ? `${chain.gasGwei}` : '…'} />
+            <Stat label="Last block" value={chain && chain.blockTime ? `${new Date(chain.blockTime * 1000).toLocaleTimeString()}` : '…'} />
+          </div>
+        </div>
+
+        {/* Market tickers */}
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm" style={{ fontWeight: 600 }}>Market · live (20s)</span>
+            {signals.volatile.length > 0 && <span className="badge badge-warning">High volatility: {signals.volatile.join(', ')}</span>}
+          </div>
+          <div className="grid-4" style={{ gap: '10px' }}>
+            {tickers.length === 0 && <p className="text-sm text-muted">Loading market…</p>}
+            {tickers.map((t) => (
+              <div key={t.id} style={{ padding: '12px', background: 'var(--cm-bg-secondary)', borderRadius: 'var(--cm-radius-md)' }}>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm" style={{ fontWeight: 700 }}>{t.symbol}</span>
+                  <span className="text-xs font-mono" style={{ color: changeColor(t.change24h) }}>{t.change24h > 0 ? '+' : ''}{t.change24h}%</span>
+                </div>
+                <div className="text-sm font-mono" style={{ marginTop: '4px' }}>${t.price.toLocaleString()}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid-2" style={{ alignItems: 'start' }}>
+          {/* Trending */}
+          <div className="card">
+            <div className="flex items-center gap-2 mb-4"><IconTrendingUp size={16} color="var(--cm-accent-2)" /><span className="text-sm" style={{ fontWeight: 600 }}>Trending tokens</span></div>
+            <div className="flex flex-col gap-2">
+              {trending.length === 0 && <p className="text-sm text-muted">Loading…</p>}
+              {trending.map((t, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <span className="text-sm">{i + 1}. {t.name} <span className="text-muted font-mono">{t.symbol}</span></span>
+                  {t.rank > 0 && <span className="text-xs text-muted">#{t.rank}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* AI insight */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2"><IconCpu size={16} color="var(--cm-accent-1)" /><span className="text-sm" style={{ fontWeight: 600 }}>AI market insight</span></div>
+              <button className="btn btn-ghost btn-sm" onClick={() => refreshInsight()} disabled={insightLoading || !chain || !tickers.length}>{insightLoading ? 'Reading…' : 'Generate'}</button>
+            </div>
+            {insight ? (
+              <p className="text-sm text-secondary" style={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{insight}</p>
+            ) : (
+              <p className="text-sm text-muted">Click <strong>Generate</strong> for Hermes' read of the live snapshot.</p>
+            )}
+          </div>
+        </div>
+
+        <p className="text-xs text-muted" style={{ marginTop: '16px', textAlign: 'center' }}>
+          Powered by public RPC + CoinGecko free API. Add a streaming provider key for push WebSockets and whale/smart-money tracking.
+        </p>
 
       </div></div>
     </div></div>
