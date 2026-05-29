@@ -24,6 +24,7 @@ import { useAutomation } from './hooks/useAutomation';
 import { useMemory } from './hooks/useMemory';
 import { useGovernance } from './hooks/useGovernance';
 import { useReputation } from './hooks/useReputation';
+import { useMarketplace } from './hooks/useMarketplace';
 import { CreditForm, TradingForm } from './components/EncryptForm';
 import { EncryptAnimation } from './components/EncryptAnimation';
 import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
@@ -33,7 +34,7 @@ import {
   IconAlertCircle, IconRefresh, IconEye, IconZap,
 } from './components/Icons';
 
-type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'live' | 'wallet' | 'automation' | 'memory' | 'governance' | 'reputation' | 'credit' | 'trading' | 'research';
+type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'market' | 'live' | 'wallet' | 'automation' | 'memory' | 'governance' | 'reputation' | 'credit' | 'trading' | 'research';
 
 function useTheme(): ['dark' | 'light', () => void] {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -74,6 +75,7 @@ function App() {
   const memory = useMemory();
   const governance = useGovernance();
   const reputation = useReputation();
+  const marketplace = useMarketplace();
 
   return (
     <>
@@ -100,6 +102,7 @@ function App() {
               { id: 'crowdfund', label: 'Crowdfund' },
               { id: 'escrow', label: 'Escrow' },
               { id: 'agents', label: 'Agents' },
+              { id: 'market', label: 'Market' },
               { id: 'live', label: 'Live' },
               { id: 'wallet', label: 'Wallet' },
               { id: 'automation', label: 'Automation' },
@@ -165,6 +168,7 @@ function App() {
       {page === 'crowdfund' && <CrowdfundPage isConnected={fhe.isInitialized} onConnect={fhe.connect} crowdfund={crowdfund} />}
       {page === 'escrow' && <EscrowPage isConnected={fhe.isInitialized} onConnect={fhe.connect} escrow={escrow} />}
       {page === 'agents' && <AgentsPage agents={agents} />}
+      {page === 'market' && <MarketplacePage marketplace={marketplace} onInstall={(prompt) => { agents.run(prompt); setPage('agents'); }} />}
       {page === 'live' && <LiveIntelPage realtime={realtime} />}
       {page === 'wallet' && <WalletPage isConnected={fhe.isInitialized} onConnect={fhe.connect} wallet={walletIntel} />}
       {page === 'automation' && <AutomationPage isConnected={fhe.isInitialized} onConnect={fhe.connect} automation={automation} />}
@@ -425,6 +429,19 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
                 your reputation clears a bar without revealing the number.
               </p>
               <div className="flex gap-2"><span className="badge badge-accent">FHE</span><span className="badge badge-info">Trust</span><span className="badge badge-success">Live</span></div>
+            </div>
+
+            {/* Agent Marketplace */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('market')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(192,132,252,0.15), rgba(0,212,255,0.15))', border: '1px solid rgba(192,132,252,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconCpu size={28} color="#c084fc" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Agent Marketplace</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                Install, save, and share agent-workflow templates that run on your
+                Hermes council — strategies you can deploy in one click.
+              </p>
+              <div className="flex gap-2"><span className="badge badge-accent">Agents</span><span className="badge badge-info">Templates</span><span className="badge badge-warning">New</span></div>
             </div>
 
             {/* Credit Scoring */}
@@ -1958,6 +1975,65 @@ function ReputationPage({ isConnected, onConnect, reputation }: { isConnected: b
               {r.grant.to && <p className="text-sm mt-2" style={{ color: 'var(--cm-success)' }}>✅ {r.grant.to.slice(0, 8)}… can now unseal your reputation.</p>}
               {r.grant.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{r.grant.error}</p>}
             </div>
+          </div>
+        </div>
+
+      </div></div>
+    </div></div>
+  );
+}
+
+// ── Agent Marketplace Page ───────────────────────────────────────────────────
+
+function MarketplacePage({ marketplace, onInstall }: { marketplace: ReturnType<typeof useMarketplace>; onInstall: (prompt: string) => void }) {
+  const m = marketplace;
+  const [name, setName] = useState('');
+  const [desc, setDesc] = useState('');
+  const [prompt, setPrompt] = useState('');
+  const [importCode, setImportCode] = useState('');
+
+  return (
+    <div className="dashboard"><div className="container">
+      <SurfaceHeader icon={<IconCpu size={22} color="var(--cm-accent-2)" />} title="Agent Marketplace" subtitle="Install, save, and share agent-workflow templates that run on your Hermes council." />
+      <div className="dashboard-content"><div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+
+        {/* Template grid */}
+        <div className="grid-3" style={{ gap: '12px', marginBottom: '20px' }}>
+          {m.all.map((t) => (
+            <div key={t.id} className="card" style={{ padding: '18px', display: 'flex', flexDirection: 'column' }}>
+              <div className="flex items-center justify-between" style={{ marginBottom: '6px' }}>
+                <span className="text-sm" style={{ fontWeight: 700 }}>{t.name}</span>
+                {t.builtin ? <span className="badge badge-info">Official</span> : <span className="badge badge-accent">Yours</span>}
+              </div>
+              <p className="text-xs text-secondary" style={{ lineHeight: 1.5, marginBottom: '12px', flex: 1 }}>{t.description}</p>
+              <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
+                <button className="btn btn-primary btn-sm" onClick={() => onInstall(t.prompt)}>Install & run</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => m.doExport(t)}>Share</button>
+                {!t.builtin && <button className="btn btn-ghost btn-sm" onClick={() => m.remove(t.id)}>✕</button>}
+              </div>
+              {m.exported?.id === t.id && (
+                <textarea className="form-input" readOnly value={m.exported.code} onFocus={(e) => e.currentTarget.select()} style={{ width: '100%', marginTop: '8px', fontFamily: 'var(--cm-font-mono)', fontSize: '0.65rem', minHeight: '50px' }} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid-2" style={{ alignItems: 'start' }}>
+          {/* Create */}
+          <div className="card">
+            <h3 style={{ marginBottom: '8px' }}>Create a template</h3>
+            <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" style={{ width: '100%', marginBottom: '8px' }} />
+            <input className="form-input" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Short description" style={{ width: '100%', marginBottom: '8px' }} />
+            <textarea className="form-input" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="The task the council should run…" style={{ width: '100%', minHeight: '60px', marginBottom: '8px' }} />
+            <button className="btn btn-primary btn-sm" onClick={() => { m.create(name, desc, prompt); setName(''); setDesc(''); setPrompt(''); }} disabled={!name.trim() || !prompt.trim()}>Save template</button>
+          </div>
+          {/* Import */}
+          <div className="card">
+            <h3 style={{ marginBottom: '8px' }}>Install a shared template</h3>
+            <p className="text-secondary text-sm" style={{ marginBottom: '8px' }}>Paste a template code shared by someone else.</p>
+            <textarea className="form-input" value={importCode} onChange={(e) => setImportCode(e.target.value)} placeholder="Paste template code…" style={{ width: '100%', minHeight: '60px', marginBottom: '8px', fontFamily: 'var(--cm-font-mono)', fontSize: '0.7rem' }} />
+            <button className="btn btn-secondary btn-sm" onClick={() => { m.doImport(importCode); setImportCode(''); }} disabled={!importCode.trim()}>Import</button>
+            {m.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{m.error}</p>}
           </div>
         </div>
 
