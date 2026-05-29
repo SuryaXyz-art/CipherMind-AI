@@ -68,7 +68,7 @@ VITE_NOUS_MODEL=nousresearch/hermes-4-70b
 npm install
 
 # 2. Run the test suite (CoFHE mocks — no testnet needed)
-npx hardhat test          # 36 passing: contracts, real oracle loop, FHE features, agentic research
+npx hardhat test          # 51 passing: vault, payroll, lending, credit, trading, oracle loop, agentic research
 
 # 3. Deploy contracts to Arbitrum Sepolia
 npx hardhat deploy-credit  --network arb-sepolia

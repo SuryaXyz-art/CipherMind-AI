@@ -1,85 +1,85 @@
-# 🧠 CipherMind AI — WaveHack Submission
+# 🧠 CipherMind — WaveHack Submission
 
-> **Privacy-first AI intelligence on encrypted data — Fhenix CoFHE × Nous Hermes, live on Arbitrum Sepolia.**
+> **A confidential-finance suite on Fhenix CoFHE: move money, get paid, borrow, and get AI analytics — with the numbers sealed shut.** Live on Arbitrum Sepolia.
 
 ---
 
 ## 1. The problem
 
-Every "AI for finance" product asks you to hand over your rawest data — income, debt, positions, trading strategy — to a model and a server you don't control. Credit scoring, trading signals, and research all leak the exact numbers that define your financial life.
+Public chains make every amount visible: your balance, your salary, your debt, your credit profile. That kills real financial use cases — payroll, lending, payments, credit — because nobody wants their numbers on a public explorer. CipherMind keeps the *amounts* encrypted end-to-end while staying fully on-chain and trustless.
 
-**CipherMind removes that trade-off.** Your numbers are encrypted on your device, processed as ciphertext on-chain, and the AI only ever sees *anonymized bands* — never a raw value. The result comes back encrypted, and only you can unseal it.
+## 2. What it is
 
-## 2. The solution
+One app, several confidential surfaces, all built on **Fully Homomorphic Encryption** (Fhenix CoFHE) so the contract computes on ciphertext and only the owner can unseal results:
 
-A full FHE + LLM pipeline where the privacy guarantee is enforced by code, not policy:
+| Surface | What stays encrypted | The FHE move |
+|---------|----------------------|--------------|
+| **Payments** (vault) | Balance + transfer amount | `euint32` balances; send adjusts both sides homomorphically; overdraft → `FHE.select` moves 0 (no revert/leak) |
+| **Payroll** | Every employee's salary | Per-recipient ACL; claim accumulates an encrypted salary balance |
+| **Lending** | Collateral, debt, drawn, health | 75% LTV checked with `FHE.lte` on ciphertext; over-borrow clamps to 0; encrypted health boolean |
+| **Credit scoring** | Income/debt/history → score | Oracle decrypts via permit → anonymized bands → Nous Hermes → encrypted score |
+| **Trading signals** | Position/stops → signal | Same encrypted-oracle pattern; encrypted direction/strength/risk |
+| **Research** | — | Multi-step Hermes agent (tool-calling) |
 
-```
-Browser (you)                Arbitrum Sepolia (CoFHE)            Off-chain oracle            Nous Hermes
-─────────────                ────────────────────────            ─────────────────            ───────────
-encrypt income/position  ─▶  store euint32 ciphertext
-(@cofhe/sdk/web)              FHE.allow(oracle)            ─▶     decrypt via permit
-                                                                 anonymize → bands      ─▶    score / signal
-                              store euint32 result         ◀─     encrypt result        ◀─    (reasoning)
-unseal with your permit  ◀─   FHE.allow(you)
-```
+**Confidential primitives reused across surfaces:** balance/threshold **proofs** (prove "≥ X" without revealing the number), **benchmarking** (above-average without exposing scores), **selective disclosure** (grant exactly one viewer decrypt rights).
 
-The oracle is the *only* party granted decrypt rights (`FHE.allow(field, oracle)` at submit time), and it collapses raw values into coarse bands (`"high"`, `"moderate"`, …) before the LLM is ever called. Raw numbers never leave the encrypted/oracle boundary.
+## 3. Why FHE (not just ZK)
 
-## 3. What's novel (and genuinely FHE-native)
-
-Beyond the core scoring flow, CipherMind ships **six confidential features** that are only possible with FHE — each returns an *encrypted* answer that only the user can unseal:
-
-| Feature | Contract call | Why it needs FHE |
-|---------|--------------|------------------|
-| **Credit scoring** | `submitProfile` → oracle → unseal | Score computed without exposing income/debt |
-| **Trading signals** | `submitPosition` → oracle → unseal | Signal without exposing positions/stops |
-| **Confidential benchmarking** | `requestBenchmarkComparison` / `requestStrengthBenchmark` | "Am I above the network average?" via `score × count > Σ` (avoids FHE division) — **no individual score or the average is ever revealed** |
-| **Encrypted threshold alerts** | `evaluateScoreThreshold` / `evaluateRiskThreshold` | "Is my score ≥ X / risk ≥ X?" returns an encrypted boolean; **the threshold X stays private too** |
-| **Selective-disclosure passport** | `grantScoreAccess` / `grantSignalAccess` | Grant exactly one lender/fund the right to unseal — composable by other contracts |
-| **Hermes agentic research** | client-side ReAct loop | Multi-step tool-calling agent (price lookup, concept explainer) before answering |
+These surfaces need the protocol to *compute* on private values — add balances, compare debt to an LTV, accumulate salaries, score a profile. ZK proves a statement; FHE lets the contract do the arithmetic and comparisons directly on ciphertext, which is exactly what payments/lending/payroll require.
 
 ## 4. Architecture
 
-- **Smart contracts** (Solidity `0.8.25`, `@fhenixprotocol/cofhe-contracts`): `CipherMindCredit`, `CipherMindTrading`, `CipherMindAnalytics`. All state is `euint32`/`ebool`; the 3-step public reveal and sealed `decryptForView` flows are both supported.
-- **Off-chain oracle** (`backend/oracleLogic.ts`, run as `npx hardhat oracle`): listens for events, decrypts via its CoFHE permit, anonymizes, calls Nous Hermes (`backend/nousClient.ts`, dependency-free `fetch`), re-encrypts, fulfills. Reuses one CoFHE client that works on mocks *and* live networks.
-- **Frontend** (Vite + React 19 + TS): `@cofhe/sdk/web` in the browser encrypts inputs and unseals results; `ethers` drives the contracts; the Hermes agent runs client-side.
-- **AI**: Nous `hermes-4-70b` via the native inference API.
+- **Contracts** (Solidity 0.8.25, `@fhenixprotocol/cofhe-contracts`): `EncryptedVault`, `ConfidentialPayroll`, `ConfidentialLending`, `CipherMindCredit`, `CipherMindTrading`, `MockUSDC`.
+- **Off-chain oracle** (`backend/oracleLogic.ts`, run as `npx hardhat oracle`): for the AI surfaces — decrypts via its CoFHE permit, anonymizes to bands, calls Nous Hermes (dependency-free `fetch`), re-encrypts, fulfills.
+- **Frontend** (Vite + React 19 + TS): `@cofhe/sdk/web` encrypts inputs and unseals results in the browser; single **surfaces-grid** UI with the ████ sealed-amount motif and a manual **dark/light** toggle.
+- **AI:** Nous `hermes-4-70b` (native inference API).
 
 ## 5. Status — verified, not vaporware
 
-- ✅ **39/39 tests pass** on the CoFHE mocks (contracts, real oracle loop, all 6 confidential features, agentic loop).
-- ✅ **Live on Arbitrum Sepolia** — `npx hardhat e2e --network arb-sepolia` runs the full encrypted credit flow on-chain with a real Hermes call.
-- ✅ Frontend type-checks and builds (bundles the CoFHE `tfhe` WASM runtime).
+- ✅ **51 tests passing** on the CoFHE mocks (every surface + every confidential primitive).
+- ✅ **Live on Arbitrum Sepolia** — `npx hardhat e2e --network arb-sepolia` runs a full encrypted credit flow on-chain with a real Hermes call.
+- ✅ Frontend type-checks + builds (bundles the CoFHE `tfhe` WASM runtime).
 
-**Deployed contracts (Arbitrum Sepolia):**
-- CipherMindCredit — `0x1128E66806605bCEf7836147C60a222CDa47cA53`
-- CipherMindTrading — `0x6f281299127c72BF4fF5A4B16408CE615200aD7E`
+### Deployed contracts (Arbitrum Sepolia)
+| Contract | Address |
+|----------|---------|
+| MockUSDC | `0xD634Ba983dE5cB66a65eBb113e4aBA36663af75E` |
+| EncryptedVault | `0x1FEE1713517C0d33c01E63D3Af8ed4789a3eA1E6` |
+| ConfidentialPayroll | `0x776B7Bc2086b75ce0603d402C2f1c0655c0A26C7` |
+| ConfidentialLending | `0x897A2406C9b2FB897bEBb9Bc7c728b303300F1D4` |
+| CipherMindCredit | `0x1128E66806605bCEf7836147C60a222CDa47cA53` |
+| CipherMindTrading | `0x6f281299127c72BF4fF5A4B16408CE615200aD7E` |
 
-## 6. Wave / milestone map
+## 6. Demo script (~2 min)
 
-- **Wave 1 — Real core:** end-to-end encrypted credit + trading flow (encrypt → submit → oracle → Hermes → unseal), keystone `FHE.allow(oracle)` fix, deployed + verified on Arbitrum Sepolia.
-- **Wave 2 — Confidential analytics:** benchmarking, threshold alerts, and selective-disclosure passport on both credit and trading — encrypted comparisons and ACL-based sharing.
-- **Wave 3 — Agentic intelligence:** multi-step tool-calling Hermes research agent; deeper Nous integration.
-- **Future:** on-chain composability (other contracts consuming a confidential score), encrypted portfolio analytics, multi-asset signals.
+> Connect MetaMask (auto-switches to Arbitrum Sepolia). Tip: use a *second* account as the recipient so privacy across parties is visible.
 
-## 7. Demo script (2 min)
+1. **Payments** → *Deposit* 100 → balance shows `████`, click *Unseal* → 100. *Private Send* 30 to another address → amount is ciphertext on-chain; sender balance drops, recipient's rises (only they can read it).
+2. **Balance Proof** → "Balance ≥ 50" → ✅ verified, exact balance never revealed.
+3. **Payroll** → *Create run* → set two very different encrypted salaries for two addresses → each employee *Claims* and unseals **only their own** number.
+4. **Lending** → *Deposit* 1000 collateral → *Borrow* 700 (ok) → *Borrow* 100 more → debt unchanged (over-75% LTV silently draws 0) → *Check health* → ✅ encrypted boolean.
+5. **Credit** (needs `npm run oracle` running) → enter income/debt → encrypt → oracle → Hermes → unseal score.
+6. **Research** → ask a question → watch the agent call a tool, then answer.
 
-1. Connect MetaMask (auto-switches to Arbitrum Sepolia). *Use a second account as the "user" to show it differs from the oracle.*
-2. **Credit:** enter income/debt/history → watch encrypt → submit → oracle → unseal. Show the score appears, but the raw inputs were never exposed.
-3. **Confidential actions:** click *Compare (encrypted)* → "above average" with no scores revealed; *Check threshold* → encrypted yes/no; *Grant access* to a lender address.
-4. **Trading:** generate a signal, then the same three confidential actions on it.
-5. **Research:** ask "What's the price of BTC and is yield farming risky?" → watch the agent call tools then answer.
+## 7. Run it
 
-## 8. Run it
-
-See [`README.md`](./README.md) for full setup. Quick path:
 ```bash
-npm install && npx hardhat test           # 39 passing on mocks
-npx hardhat deploy-credit  --network arb-sepolia
-npx hardhat deploy-trading --network arb-sepolia
-npm run oracle                            # keep running
+npm install && npx hardhat test            # 51 passing on mocks
+npx hardhat deploy-vault            --network arb-sepolia
+npx hardhat deploy-payroll-lending  --network arb-sepolia
+npx hardhat deploy-credit           --network arb-sepolia
+npx hardhat deploy-trading          --network arb-sepolia
+#   → paste addresses into .env (root) and frontend/.env
+npm run oracle                             # for credit/trading (keep open)
 cd frontend && npm install && npm run dev
 ```
+
+## 8. Credits / inspiration
+
+Payments, payroll, and lending designs were informed by excellent confidential-finance work in the Fhenix ecosystem (gift-card checkout, confidential payroll, and confidential lending projects). All contracts here are **original implementations on CoFHE** — the ideas were studied, the code was written from scratch.
+
+## 9. Honest scope
+
+`withdraw` from the vault and a `cUSDC` ERC‑7984-style token are intentionally deferred (the former needs CoFHE async-decrypt to settle safely; the latter needs cross-contract encrypted minting). Bridge / fiat off-ramp / guardian recovery are out of scope — they require relayers / fiat operators / full account abstraction that can't be demonstrated trustlessly in a hackathon.
 
 *Built for the Akindo WaveHack — Fhenix CoFHE & Nous Research ecosystems.*
