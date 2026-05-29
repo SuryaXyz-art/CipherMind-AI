@@ -25,6 +25,7 @@ import { useMemory } from './hooks/useMemory';
 import { useGovernance } from './hooks/useGovernance';
 import { useReputation } from './hooks/useReputation';
 import { useMarketplace } from './hooks/useMarketplace';
+import { PixelBackground } from './components/PixelBackground';
 import { CreditForm, TradingForm } from './components/EncryptForm';
 import { EncryptAnimation } from './components/EncryptAnimation';
 import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
@@ -77,6 +78,27 @@ function NavMenu({ label, items, page, setPage }: { label: string; items: { id: 
   );
 }
 
+// Scroll-reveal wrapper: fades/slides children in when they enter the viewport.
+function Reveal({ children, delay = 0, style }: { children: React.ReactNode; delay?: number; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((e) => { if (e.isIntersecting) { setShown(true); io.disconnect(); } }),
+      { threshold: 0.15 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className={`reveal ${shown ? 'reveal-in' : ''}`} style={{ transitionDelay: `${delay}ms`, ...style }}>
+      {children}
+    </div>
+  );
+}
+
 function App() {
   const [page, setPage] = useState<Page>('home');
   const [theme, toggleTheme] = useTheme();
@@ -101,6 +123,7 @@ function App() {
 
   return (
     <>
+      <PixelBackground />
       {/* ── Navigation ────────────────────────────────────────────── */}
       <nav className="navbar" id="navbar">
         <div className="navbar-inner">
@@ -234,6 +257,54 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
               <IconSearch size={18} /> Encrypted Research
             </button>
           </div>
+        </div>
+      </section>
+
+      {/* About / Manifesto Section */}
+      <section className="section" id="about">
+        <div className="container" style={{ maxWidth: '860px' }}>
+          <Reveal>
+            <p className="text-sm" style={{ textTransform: 'uppercase', letterSpacing: '0.18em', color: 'var(--cm-accent-1)', textAlign: 'center', marginBottom: '16px' }}>
+              Privacy as a primitive — not a patch
+            </p>
+            <h2 style={{ textAlign: 'center', fontSize: '2rem', lineHeight: 1.25, marginBottom: '24px' }}>
+              Public chains expose every number. <span className="gradient-text">CipherMind keeps them sealed</span> — and still lets AI act on them.
+            </h2>
+          </Reveal>
+          <Reveal delay={80}>
+            <p className="text-secondary" style={{ fontSize: '1.05rem', lineHeight: 1.9, textAlign: 'center', marginBottom: '16px' }}>
+              Most protocols are architected for transparency by default — and that one decision locks out everyone who <em>can't</em> publish their data:
+              institutions with compliance duties, traders protecting strategy, DAOs needing sealed-bid mechanics. CipherMind is built the other way:
+              every sensitive value — a balance, a salary, a vote, a credit profile, a reputation score — lives on-chain as <span className="mono" style={{ color: 'var(--cm-accent-1)' }}>encrypted ciphertext</span>.
+            </p>
+          </Reveal>
+          <Reveal delay={140}>
+            <p className="text-secondary" style={{ fontSize: '1.05rem', lineHeight: 1.9, textAlign: 'center' }}>
+              Powered by <strong>Fhenix CoFHE</strong>, smart contracts compute directly on that ciphertext with Fully Homomorphic Encryption.
+              Powered by <strong>Nous Hermes</strong>, a council of autonomous agents reasons, collaborates, and acts over a sealed channel.
+              You unseal results with your own key. Nobody else — not an operator, not the chain — ever sees the underlying numbers.
+            </p>
+          </Reveal>
+
+          {/* The encrypted flow */}
+          <Reveal delay={120}>
+            <div className="grid-4" style={{ marginTop: '56px', gap: '12px' }}>
+              {[
+                { step: '01', t: 'Encrypt on device', d: 'Your inputs become ciphertext in the browser before they ever leave it.' },
+                { step: '02', t: 'Compute on ciphertext', d: 'Contracts run FHE arithmetic & comparisons on encrypted state.' },
+                { step: '03', t: 'Reason privately', d: 'Hermes agents act over a sealed channel — never on raw values.' },
+                { step: '04', t: 'Unseal only for you', d: 'Results are released to your key alone, or a viewer you choose.' },
+              ].map((s, i) => (
+                <Reveal key={s.step} delay={i * 90}>
+                  <div className="card" style={{ height: '100%' }}>
+                    <div className="mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--cm-accent-1)', marginBottom: '8px' }}>{s.step}</div>
+                    <h4 style={{ marginBottom: '6px' }}>{s.t}</h4>
+                    <p className="text-secondary text-sm" style={{ lineHeight: 1.6 }}>{s.d}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </Reveal>
         </div>
       </section>
 
@@ -515,6 +586,72 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* By the numbers */}
+      <section className="section" id="stats" style={{ background: 'var(--cm-bg-secondary)' }}>
+        <div className="container">
+          <Reveal>
+            <div className="grid-4" style={{ gap: '16px', textAlign: 'center' }}>
+              {[
+                { n: '16', l: 'Confidential surfaces' },
+                { n: '11', l: 'Verified contracts on Arbitrum' },
+                { n: '64', l: 'Passing tests' },
+                { n: '100%', l: 'Computation on ciphertext' },
+              ].map((s, i) => (
+                <Reveal key={s.l} delay={i * 90}>
+                  <div>
+                    <div className="gradient-text" style={{ fontSize: '2.6rem', fontWeight: 900, lineHeight: 1 }}>{s.n}</div>
+                    <p className="text-secondary text-sm mt-2">{s.l}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* Two layers */}
+      <section className="section" id="layers">
+        <div className="container">
+          <Reveal>
+            <div className="text-center mb-6">
+              <h2 className="gradient-text" style={{ display: 'inline-block' }}>One vault. Two layers.</h2>
+              <p className="text-secondary mt-2" style={{ maxWidth: '560px', margin: '12px auto 0' }}>
+                A confidential-finance core, and an autonomous-AI layer that reasons on top of it — all on encrypted state.
+              </p>
+            </div>
+          </Reveal>
+          <div className="grid-2" style={{ maxWidth: '960px', margin: '40px auto 0', alignItems: 'start' }}>
+            <Reveal delay={60}>
+              <div className="card" style={{ height: '100%' }}>
+                <div className="flex items-center gap-2 mb-4"><IconLock size={18} color="var(--cm-accent-1)" /><h3>Confidential finance</h3></div>
+                <p className="text-secondary text-sm" style={{ lineHeight: 1.8 }}>
+                  Encrypted payments, payroll, lending, requests, crowdfunding, escrow, governance and reputation —
+                  balances, salaries, debt, votes and scores stay sealed while contracts still enforce the rules with
+                  homomorphic comparisons (<span className="mono">FHE.lte</span>, <span className="mono">FHE.select</span>).
+                </p>
+              </div>
+            </Reveal>
+            <Reveal delay={140}>
+              <div className="card" style={{ height: '100%' }}>
+                <div className="flex items-center gap-2 mb-4"><IconCpu size={18} color="var(--cm-accent-2)" /><h3>Autonomous intelligence</h3></div>
+                <p className="text-secondary text-sm" style={{ lineHeight: 1.8 }}>
+                  A 7-agent Hermes council that plans and delegates, safe autonomous actions with an approval harness,
+                  wallet-derived encrypted memory, realtime market intelligence, on-chain wallet analytics, and an agent
+                  marketplace — verifiable reasoning, never on raw data.
+                </p>
+              </div>
+            </Reveal>
+          </div>
+          <Reveal delay={120}>
+            <div className="text-center" style={{ marginTop: '40px' }}>
+              <button className="btn btn-primary btn-lg" onClick={() => onNavigate('agents')} id="cta-agents">
+                <IconCpu size={18} /> Explore the Agent Council
+              </button>
+            </div>
+          </Reveal>
         </div>
       </section>
 

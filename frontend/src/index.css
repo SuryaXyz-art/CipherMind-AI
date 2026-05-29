@@ -995,3 +995,31 @@ select:focus-visible, textarea:focus-visible, .navbar-link:focus-visible {
   .navbar-nav { overflow: visible; max-width: none; gap: 2px; }
   .nav-dropdown-menu { left: auto; right: 0; }
 }
+
+/* ── Pixel ciphertext-rain background ─────────────────────────────────── */
+.pixel-bg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.30;
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+}
+[data-theme="light"] .pixel-bg { opacity: 0.12; }
+/* Lift app content above the background canvas */
+main, .dashboard { position: relative; z-index: 1; }
+
+/* ── Scroll reveal ─────────────────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
