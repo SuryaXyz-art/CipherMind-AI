@@ -5,7 +5,7 @@
  * and Nous Hermes AI. All icons are professional SVGs.
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useFHE } from './hooks/useFHE';
 import { useCredit } from './hooks/useCredit';
 import { useTrading } from './hooks/useTrading';
@@ -21,8 +21,28 @@ import {
 
 type Page = 'home' | 'credit' | 'trading' | 'research';
 
+function useTheme(): ['dark' | 'light', () => void] {
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      return localStorage.getItem('cm-theme') === 'light' ? 'light' : 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      localStorage.setItem('cm-theme', theme);
+    } catch {
+      /* ignore */
+    }
+  }, [theme]);
+  return [theme, () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))];
+}
+
 function App() {
   const [page, setPage] = useState<Page>('home');
+  const [theme, toggleTheme] = useTheme();
   const fhe = useFHE();
   const credit = useCredit();
   const trading = useTrading();
@@ -57,7 +77,17 @@ function App() {
             ))}
           </ul>
 
-          <div>
+          <div className="flex items-center gap-3">
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={toggleTheme}
+              id="theme-toggle"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label="Toggle theme"
+              style={{ fontSize: '1rem', lineHeight: 1, padding: '6px 10px' }}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
             {fhe.isInitialized ? (
               <div className="flex items-center gap-3">
                 <span className="badge badge-success">
