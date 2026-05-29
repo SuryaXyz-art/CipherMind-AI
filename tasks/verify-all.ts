@@ -29,6 +29,11 @@ task('verify-all', 'Verify all deployed CipherMind contracts on the explorer').s
       { name: 'ConfidentialLending', address: dep('ConfidentialLending', 'LENDING_CONTRACT_ADDRESS'), args: [usdc] },
       { name: 'CipherMindCredit', address: dep('CipherMindCredit', 'CREDIT_CONTRACT_ADDRESS'), args: [oracle] },
       { name: 'CipherMindTrading', address: dep('CipherMindTrading', 'TRADING_CONTRACT_ADDRESS'), args: [oracle] },
+      { name: 'PaymentRequests', address: dep('PaymentRequests', 'REQUESTS_CONTRACT_ADDRESS'), args: [] },
+      { name: 'Crowdfund', address: dep('Crowdfund', 'CROWDFUND_CONTRACT_ADDRESS'), args: [] },
+      { name: 'ConfidentialEscrow', address: dep('ConfidentialEscrow', 'ESCROW_CONTRACT_ADDRESS'), args: [] },
+      { name: 'EncryptedGovernance', address: dep('EncryptedGovernance', 'GOVERNANCE_CONTRACT_ADDRESS'), args: [] },
+      { name: 'ReputationRegistry', address: dep('ReputationRegistry', 'REPUTATION_CONTRACT_ADDRESS'), args: [] },
     ]
 
     for (const t of targets) {
