@@ -37,7 +37,9 @@ export async function getCofheClient(): Promise<any> {
     const publicClient = createPublicClient({ chain: arbitrumSepolia, transport });
     const walletClient = createWalletClient({ account: account as `0x${string}`, chain: arbitrumSepolia, transport });
 
-    await client.connect(publicClient, walletClient);
+    // Cast across a viem type-version skew between the app's viem and the one
+    // @cofhe/sdk's types were built against; the runtime clients are compatible.
+    await client.connect(publicClient as any, walletClient as any);
     await client.permits.createSelf({ issuer: account });
     return client;
   })();

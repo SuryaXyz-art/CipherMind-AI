@@ -60,7 +60,12 @@ function App() {
       <nav className="navbar" id="navbar">
         <div className="navbar-inner">
           <a className="navbar-logo" onClick={() => setPage('home')} style={{ cursor: 'pointer' }}>
-            <div className="navbar-logo-icon">C</div>
+            <img
+              src="/ciphermind-logo.png"
+              alt="CipherMind AI"
+              className="navbar-logo-icon"
+              style={{ objectFit: 'cover' }}
+            />
             <span className="navbar-logo-text">CipherMind</span>
           </a>
 
