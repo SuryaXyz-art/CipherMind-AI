@@ -16,6 +16,8 @@ import { useLending } from './hooks/useLending';
 import { useRequests } from './hooks/useRequests';
 import { useCrowdfund } from './hooks/useCrowdfund';
 import { useEscrow } from './hooks/useEscrow';
+import { useAgents } from './hooks/useAgents';
+import { AGENTS } from './lib/agents';
 import { CreditForm, TradingForm } from './components/EncryptForm';
 import { EncryptAnimation } from './components/EncryptAnimation';
 import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
@@ -25,7 +27,7 @@ import {
   IconAlertCircle, IconRefresh, IconEye, IconZap,
 } from './components/Icons';
 
-type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'credit' | 'trading' | 'research';
+type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'requests' | 'crowdfund' | 'escrow' | 'agents' | 'credit' | 'trading' | 'research';
 
 function useTheme(): ['dark' | 'light', () => void] {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -59,6 +61,7 @@ function App() {
   const requests = useRequests();
   const crowdfund = useCrowdfund();
   const escrow = useEscrow();
+  const agents = useAgents();
 
   return (
     <>
@@ -84,6 +87,7 @@ function App() {
               { id: 'requests', label: 'Requests' },
               { id: 'crowdfund', label: 'Crowdfund' },
               { id: 'escrow', label: 'Escrow' },
+              { id: 'agents', label: 'Agents' },
               { id: 'credit', label: 'Credit Score' },
               { id: 'trading', label: 'Trading Signals' },
               { id: 'research', label: 'Research' },
@@ -142,6 +146,7 @@ function App() {
       {page === 'requests' && <RequestsPage isConnected={fhe.isInitialized} onConnect={fhe.connect} requests={requests} />}
       {page === 'crowdfund' && <CrowdfundPage isConnected={fhe.isInitialized} onConnect={fhe.connect} crowdfund={crowdfund} />}
       {page === 'escrow' && <EscrowPage isConnected={fhe.isInitialized} onConnect={fhe.connect} escrow={escrow} />}
+      {page === 'agents' && <AgentsPage agents={agents} />}
       {page === 'credit' && <CreditPage isConnected={fhe.isInitialized} onConnect={fhe.connect} credit={credit} />}
       {page === 'trading' && <TradingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} trading={trading} />}
       {page === 'research' && <ResearchPage isConnected={fhe.isInitialized} onConnect={fhe.connect} research={research} />}
@@ -302,6 +307,20 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
                 release on agreement; disputes go to the arbiter — no platform rake.
               </p>
               <div className="flex gap-2"><span className="badge badge-accent">FHE</span><span className="badge badge-info">Trustless</span><span className="badge badge-success">Live</span></div>
+            </div>
+
+            {/* Hermes Agent Council */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('agents')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(0,212,255,0.15), rgba(123,97,255,0.15))', border: '1px solid rgba(0,212,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconCpu size={28} color="#00d4ff" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Hermes Agent Council</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                A council of specialized AI agents that plan, delegate, and reason
+                together over a sealed channel — with confidence scores and a full
+                reasoning trace.
+              </p>
+              <div className="flex gap-2"><span className="badge badge-accent">Multi-agent</span><span className="badge badge-info">Hermes</span><span className="badge badge-warning">New</span></div>
             </div>
 
             {/* Credit Scoring */}
@@ -1249,6 +1268,109 @@ function EscrowPage({ isConnected, onConnect, escrow }: { isConnected: boolean; 
             <button className="btn btn-ghost btn-sm mt-2" onClick={() => escrow.revealBalance()} disabled={escrow.balanceLoading}><IconEye size={14} /> {escrow.balanceLoading ? 'Unsealing…' : 'Unseal'}</button>
           </div>
         </div>
+      </div></div>
+    </div></div>
+  );
+}
+
+// ── Agents Page (multi-agent Hermes council) ────────────────────────────────
+
+function AgentsPage({ agents }: { agents: ReturnType<typeof useAgents> }) {
+  const [task, setTask] = useState('');
+  const activeIds = new Set(agents.plan.map((p) => p.agentId));
+  const doneIds = new Set(agents.steps.map((s) => s.agentId));
+  const suggestions = [
+    'Should I rotate treasury from ETH into stablecoins right now?',
+    'Assess the risk of providing liquidity to a new ARB pair',
+    'Is sentiment around BTC bullish enough to add exposure?',
+  ];
+
+  const phaseLabel: Record<string, string> = {
+    idle: 'Idle', planning: 'Planning & delegating…', delegating: 'Agents reasoning…', synthesizing: 'Synthesizing…', done: 'Council complete',
+  };
+
+  return (
+    <div className="dashboard"><div className="container">
+      <SurfaceHeader icon={<IconCpu size={22} color="var(--cm-accent-1)" />} title="Hermes Agent Council" subtitle="A council of specialized agents plans, delegates, and reasons together — with confidence scores and a full reasoning trace." />
+      <div className="dashboard-content"><div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+
+        {/* Task input */}
+        <div className="card" style={{ marginBottom: '20px' }}>
+          <div className="flex items-center gap-2 mb-4"><IconZap size={16} color="var(--cm-accent-1)" /><span className="text-sm" style={{ fontWeight: 600 }}>Give the council a task</span></div>
+          <div style={{ position: 'relative' }}>
+            <textarea className="form-input" style={{ width: '100%', minHeight: '70px', resize: 'vertical', paddingRight: '56px' }}
+              placeholder="e.g. Should I rebalance my portfolio given current market risk?"
+              value={task} onChange={(e) => setTask(e.target.value)} disabled={agents.busy}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (task.trim() && !agents.busy) agents.run(task.trim()); } }} />
+            <button className="btn btn-primary btn-icon" style={{ position: 'absolute', right: '8px', bottom: '8px' }}
+              disabled={agents.busy || !task.trim()} onClick={() => agents.run(task.trim())}><IconSend size={18} /></button>
+          </div>
+          {agents.phase === 'idle' && !agents.result && (
+            <div className="flex gap-2 mt-4" style={{ flexWrap: 'wrap' }}>
+              {suggestions.map((s, i) => (
+                <button key={i} className="btn btn-ghost btn-sm" style={{ fontSize: '0.75rem', border: '1px solid var(--cm-border)', borderRadius: '20px' }} onClick={() => setTask(s)}>{s}</button>
+              ))}
+            </div>
+          )}
+          {agents.busy && (
+            <div className="flex items-center gap-2 mt-4 text-sm" style={{ color: 'var(--cm-accent-1)' }}>
+              <span className="thinking-dot" /> {phaseLabel[agents.phase]}
+            </div>
+          )}
+          {agents.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{agents.error}</p>}
+        </div>
+
+        {/* Council roster */}
+        <div className="grid-4" style={{ gap: '10px', marginBottom: '20px' }}>
+          {AGENTS.map((a) => {
+            const isActive = activeIds.has(a.id);
+            const isDone = doneIds.has(a.id);
+            const step = agents.steps.find((s) => s.agentId === a.id);
+            return (
+              <div key={a.id} className="card" style={{ padding: '14px', opacity: agents.plan.length && !isActive ? 0.4 : 1, borderColor: isActive ? a.accent : 'var(--cm-border)' }}>
+                <div className="flex items-center gap-2" style={{ marginBottom: '4px' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: a.accent, boxShadow: isActive && !isDone ? `0 0 8px ${a.accent}` : 'none', display: 'inline-block' }} className={isActive && !isDone ? 'animate-pulse-glow' : ''} />
+                  <span className="text-sm" style={{ fontWeight: 600 }}>{a.name}</span>
+                </div>
+                <p className="text-xs text-muted" style={{ lineHeight: 1.4 }}>{a.role}</p>
+                {step && <p className="text-xs mt-2" style={{ color: a.accent, fontFamily: 'var(--cm-font-mono)' }}>conf {step.confidence}%</p>}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Synthesized answer */}
+        {agents.result && (
+          <div className="card animate-slide-up" style={{ marginBottom: '16px' }}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="badge badge-success"><IconShieldCheck size={12} /> Council Synthesis</div>
+              <span className="text-xs font-mono" style={{ color: 'var(--cm-accent-1)' }}>overall confidence {agents.result.confidence}%</span>
+            </div>
+            <div style={{ height: 6, background: 'var(--cm-bg-secondary)', borderRadius: 3, overflow: 'hidden', marginBottom: '16px' }}>
+              <div style={{ height: '100%', width: `${agents.result.confidence}%`, background: 'var(--cm-gradient-brand)' }} />
+            </div>
+            <div className="research-response" style={{ lineHeight: 1.8, whiteSpace: 'pre-wrap', fontSize: '0.9375rem' }}>{agents.result.answer}</div>
+            <button className="btn btn-secondary mt-4" onClick={() => { agents.reset(); setTask(''); }}><IconRefresh size={16} /> New task</button>
+          </div>
+        )}
+
+        {/* Reasoning trace / audit log */}
+        {agents.steps.length > 0 && (
+          <div className="card">
+            <div className="flex items-center gap-2 mb-4"><IconEye size={14} color="var(--cm-text-tertiary)" /><span className="text-xs text-muted" style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>Reasoning trace (audit log)</span></div>
+            {agents.rationale && <p className="text-xs text-secondary" style={{ marginBottom: '12px', fontStyle: 'italic' }}>Plan: {agents.rationale}</p>}
+            <div className="flex flex-col gap-3">
+              {agents.steps.map((s, i) => (
+                <div key={i} style={{ borderLeft: '2px solid var(--cm-border-accent)', paddingLeft: '12px' }}>
+                  <div className="flex items-center gap-2"><span className="text-sm" style={{ fontWeight: 600 }}>{s.agentName}</span><span className="text-xs font-mono text-muted">conf {s.confidence}%</span></div>
+                  <p className="text-xs text-tertiary" style={{ marginBottom: '2px' }}>↳ {s.subtask}</p>
+                  <p className="text-sm text-secondary" style={{ lineHeight: 1.6 }}>{s.output}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div></div>
     </div></div>
   );

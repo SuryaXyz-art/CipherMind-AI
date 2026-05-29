@@ -933,3 +933,20 @@ select:focus-visible, textarea:focus-visible, .navbar-link:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Tertiary text utility (used by the agent council trace) */
+.text-tertiary { color: var(--cm-text-tertiary); }
+
+/* AI "thinking" pulsing dot */
+.thinking-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cm-accent-1);
+  display: inline-block;
+  animation: thinking-pulse 1s ease-in-out infinite;
+}
+@keyframes thinking-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); box-shadow: 0 0 0 rgba(0,212,255,0); }
+  50% { opacity: 1; transform: scale(1.1); box-shadow: 0 0 10px rgba(0,212,255,0.6); }
+}
