@@ -17,6 +17,8 @@ export const CREDIT_ADDRESS = (import.meta.env.VITE_CREDIT_ADDRESS as string) ||
 export const TRADING_ADDRESS = (import.meta.env.VITE_TRADING_ADDRESS as string) || "";
 export const VAULT_ADDRESS = (import.meta.env.VITE_VAULT_ADDRESS as string) || "";
 export const USDC_ADDRESS = (import.meta.env.VITE_USDC_ADDRESS as string) || "";
+export const PAYROLL_ADDRESS = (import.meta.env.VITE_PAYROLL_ADDRESS as string) || "";
+export const LENDING_ADDRESS = (import.meta.env.VITE_LENDING_ADDRESS as string) || "";
 
 export function requireAddress(addr: string, name: string): string {
   if (!addr) {

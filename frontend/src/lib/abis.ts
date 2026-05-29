@@ -38,6 +38,37 @@ export const VAULT_ABI = [
   "event BalanceProofReady(address indexed user)",
 ];
 
+const IN_EUINT = "(uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature)";
+
+export const PAYROLL_ABI = [
+  "function runCount() view returns (uint256)",
+  "function runs(uint256) view returns (address employer, uint256 employeeCount, bool exists, string label)",
+  "function createRun(string label) returns (uint256)",
+  `function setAllocation(uint256 runId, address employee, ${IN_EUINT} amount)`,
+  "function getAllocation(uint256 runId) view returns (uint256)",
+  "function claim(uint256 runId)",
+  "function isEmployee(uint256, address) view returns (bool)",
+  "function claimed(uint256, address) view returns (bool)",
+  "function getEncryptedSalary() view returns (uint256)",
+  "function grantSalaryAccess(address viewer)",
+  "event RunCreated(uint256 indexed runId, address indexed employer, string label)",
+  "event Claimed(uint256 indexed runId, address indexed employee)",
+];
+
+export const LENDING_ABI = [
+  "function hasPosition(address) view returns (bool)",
+  "function depositCollateral(uint256 amount)",
+  `function borrow(${IN_EUINT} encAmount)`,
+  `function repay(${IN_EUINT} encAmount)`,
+  "function checkHealth()",
+  "function getEncryptedCollateral() view returns (uint256)",
+  "function getEncryptedDebt() view returns (uint256)",
+  "function getEncryptedBorrowable() view returns (uint256)",
+  "function getHealth() view returns (uint256)",
+  "event CollateralDeposited(address indexed user, uint256 amount)",
+  "event Borrowed(address indexed user)",
+];
+
 export const TRADING_ABI = [
   "function submitPosition((uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) positionSize, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) entryPrice, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) stopLoss, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) takeProfit, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) riskTolerance, string asset)",
   "function latestSignal(address) view returns (uint256 direction, uint256 strength, uint256 riskLevel, uint256 suggestedEntry, bool fulfilled, uint256 timestamp)",

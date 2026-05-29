@@ -11,6 +11,8 @@ import { useCredit } from './hooks/useCredit';
 import { useTrading } from './hooks/useTrading';
 import { useResearch } from './hooks/useResearch';
 import { useVault } from './hooks/useVault';
+import { usePayroll } from './hooks/usePayroll';
+import { useLending } from './hooks/useLending';
 import { CreditForm, TradingForm } from './components/EncryptForm';
 import { EncryptAnimation } from './components/EncryptAnimation';
 import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
@@ -20,7 +22,7 @@ import {
   IconAlertCircle, IconRefresh, IconEye, IconZap,
 } from './components/Icons';
 
-type Page = 'home' | 'vault' | 'credit' | 'trading' | 'research';
+type Page = 'home' | 'vault' | 'payroll' | 'lending' | 'credit' | 'trading' | 'research';
 
 function useTheme(): ['dark' | 'light', () => void] {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -49,6 +51,8 @@ function App() {
   const trading = useTrading();
   const research = useResearch();
   const vault = useVault();
+  const payroll = usePayroll();
+  const lending = useLending();
 
   return (
     <>
@@ -64,6 +68,8 @@ function App() {
             {[
               { id: 'home', label: 'Home' },
               { id: 'vault', label: 'Payments' },
+              { id: 'payroll', label: 'Payroll' },
+              { id: 'lending', label: 'Lending' },
               { id: 'credit', label: 'Credit Score' },
               { id: 'trading', label: 'Trading Signals' },
               { id: 'research', label: 'Research' },
@@ -117,6 +123,8 @@ function App() {
       {/* ── Pages ─────────────────────────────────────────────────── */}
       {page === 'home' && <HomePage onNavigate={setPage} />}
       {page === 'vault' && <VaultPage isConnected={fhe.isInitialized} onConnect={fhe.connect} vault={vault} />}
+      {page === 'payroll' && <PayrollPage isConnected={fhe.isInitialized} onConnect={fhe.connect} payroll={payroll} />}
+      {page === 'lending' && <LendingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} lending={lending} />}
       {page === 'credit' && <CreditPage isConnected={fhe.isInitialized} onConnect={fhe.connect} credit={credit} />}
       {page === 'trading' && <TradingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} trading={trading} />}
       {page === 'research' && <ResearchPage isConnected={fhe.isInitialized} onConnect={fhe.connect} research={research} />}
@@ -212,6 +220,32 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
                 <span className="badge badge-info">Vault</span>
                 <span className="badge badge-success">Live</span>
               </div>
+            </div>
+
+            {/* Confidential Payroll */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('payroll')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(123,97,255,0.15), rgba(192,132,252,0.15))', border: '1px solid rgba(123,97,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconLock size={28} color="#7b61ff" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Confidential Payroll</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                Pay a whole team in encrypted salaries. Each person claims their own
+                figure — nobody sees what anyone else earns.
+              </p>
+              <div className="flex gap-2"><span className="badge badge-accent">FHE</span><span className="badge badge-info">Teams</span><span className="badge badge-success">Live</span></div>
+            </div>
+
+            {/* Confidential Lending */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('lending')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(239,68,68,0.15))', border: '1px solid rgba(245,158,11,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconBarChart size={28} color="#f59e0b" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Confidential Lending</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                Borrow against collateral with your balances, debt, and health factor
+                encrypted. LTV enforced on ciphertext.
+              </p>
+              <div className="flex gap-2"><span className="badge badge-accent">FHE</span><span className="badge badge-info">DeFi</span><span className="badge badge-success">Live</span></div>
             </div>
 
             {/* Credit Scoring */}
@@ -923,6 +957,148 @@ function TradingFeatures({ trading }: { trading: ReturnType<typeof useTrading> }
         {trading.grant.grantedTo && <p className="text-sm mt-2" style={{ color: 'var(--cm-success)' }}>✅ Signal shared with {trading.grant.grantedTo.slice(0, 8)}… — only they can unseal it.</p>}
         {trading.grant.error && <p className="text-xs mt-1" style={{ color: 'var(--cm-danger)' }}>{trading.grant.error}</p>}
       </div>
+    </div>
+  );
+}
+
+// ── Payroll Page ─────────────────────────────────────────────────────────────
+
+function PayrollPage({ isConnected, onConnect, payroll }: { isConnected: boolean; onConnect: () => void; payroll: ReturnType<typeof usePayroll> }) {
+  const [label, setLabel] = useState('April 2026');
+  const [emp, setEmp] = useState('');
+  const [amt, setAmt] = useState('5000');
+  const [allocRun, setAllocRun] = useState('0');
+  const [claimRun, setClaimRun] = useState('0');
+
+  if (!isConnected) return <ConnectGate title="Confidential Payroll" onConnect={onConnect} icon={<IconWallet size={28} color="var(--cm-accent-1)" />} />;
+
+  return (
+    <div className="dashboard"><div className="container">
+      <SurfaceHeader icon={<IconLock size={22} color="var(--cm-accent-2)" />} title="Confidential Payroll" subtitle="Pay a team where every salary stays encrypted — nobody sees anyone else's number." />
+      <div className="dashboard-content"><div className="grid-2" style={{ maxWidth: '1000px', margin: '0 auto', alignItems: 'start' }}>
+        {/* Employer */}
+        <div className="card">
+          <h3 style={{ marginBottom: '12px' }}>Employer</h3>
+          <p className="text-secondary text-sm" style={{ marginBottom: '12px' }}>Create a run, then assign each employee an encrypted salary.</p>
+          <div className="flex items-center gap-2" style={{ marginBottom: '12px' }}>
+            <input className="form-input" value={label} onChange={e => setLabel(e.target.value)} placeholder="Run label" style={{ flex: 1 }} />
+            <button className="btn btn-primary btn-sm" onClick={() => payroll.createRun(label)} disabled={payroll.create.loading}>{payroll.create.loading ? '…' : 'Create run'}</button>
+          </div>
+          {payroll.create.message && <p className="text-xs" style={{ color: 'var(--cm-success)', marginBottom: '8px' }}>{payroll.create.message}</p>}
+          <input className="form-input" value={allocRun} onChange={e => setAllocRun(e.target.value)} placeholder="Run ID" style={{ width: '100%', marginBottom: '8px' }} />
+          <input className="form-input" value={emp} onChange={e => setEmp(e.target.value)} placeholder="0x employee" style={{ width: '100%', fontFamily: 'var(--cm-font-mono)', fontSize: '0.8rem', marginBottom: '8px' }} />
+          <div className="flex items-center gap-2">
+            <input className="form-input" type="number" value={amt} onChange={e => setAmt(e.target.value)} style={{ maxWidth: '120px' }} />
+            <button className="btn btn-primary btn-sm" onClick={() => payroll.setAllocation(Number(allocRun), emp.trim(), Number(amt))} disabled={payroll.allocate.loading || !emp.trim()}>{payroll.allocate.loading ? '…' : 'Set encrypted salary'}</button>
+          </div>
+          {payroll.allocate.message && <p className="text-xs mt-2" style={{ color: 'var(--cm-success)' }}>{payroll.allocate.message}</p>}
+          {payroll.allocate.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{payroll.allocate.error}</p>}
+        </div>
+        {/* Employee */}
+        <div className="card">
+          <h3 style={{ marginBottom: '12px' }}>Employee</h3>
+          <p className="text-secondary text-sm" style={{ marginBottom: '12px' }}>Claim your salary for a run, then unseal it. Only you can read it.</p>
+          <div className="flex items-center gap-2" style={{ marginBottom: '12px' }}>
+            <input className="form-input" value={claimRun} onChange={e => setClaimRun(e.target.value)} placeholder="Run ID" style={{ maxWidth: '120px' }} />
+            <button className="btn btn-primary btn-sm" onClick={() => payroll.claimSalary(Number(claimRun))} disabled={payroll.claim.loading}>{payroll.claim.loading ? '…' : 'Claim'}</button>
+          </div>
+          {payroll.claim.message && <p className="text-xs" style={{ color: 'var(--cm-success)', marginBottom: '8px' }}>{payroll.claim.message}</p>}
+          {payroll.claim.error && <p className="text-xs" style={{ color: 'var(--cm-danger)', marginBottom: '8px' }}>{payroll.claim.error}</p>}
+          <div style={{ textAlign: 'center', padding: '16px', background: 'var(--cm-bg-secondary)', borderRadius: 'var(--cm-radius-md)' }}>
+            <p className="text-xs text-muted" style={{ marginBottom: '6px' }}>YOUR ENCRYPTED SALARY</p>
+            <div style={{ fontFamily: 'var(--cm-font-mono)', fontSize: '1.5rem', fontWeight: 700 }}>{payroll.salary === null ? '████' : `${payroll.salary} USDC`}</div>
+            <button className="btn btn-ghost btn-sm mt-2" onClick={() => payroll.revealSalary()} disabled={payroll.salaryLoading}><IconEye size={14} /> {payroll.salaryLoading ? 'Unsealing…' : 'Unseal'}</button>
+          </div>
+        </div>
+      </div></div>
+    </div></div>
+  );
+}
+
+// ── Lending Page ─────────────────────────────────────────────────────────────
+
+function LendingPage({ isConnected, onConnect, lending }: { isConnected: boolean; onConnect: () => void; lending: ReturnType<typeof useLending> }) {
+  const [dep, setDep] = useState('1000');
+  const [bor, setBor] = useState('700');
+  const [rep, setRep] = useState('200');
+  const p = lending.position;
+
+  if (!isConnected) return <ConnectGate title="Confidential Lending" onConnect={onConnect} icon={<IconBarChart size={28} color="var(--cm-accent-2)" />} />;
+
+  return (
+    <div className="dashboard"><div className="container">
+      <SurfaceHeader icon={<IconBarChart size={22} color="var(--cm-accent-2)" />} title="Confidential Lending" subtitle="Borrow against collateral with your balances, debt, and health factor all encrypted." />
+      <div className="dashboard-content"><div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        {/* Position */}
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
+            <h3>Your position</h3>
+            <button className="btn btn-ghost btn-sm" onClick={() => lending.refresh()} disabled={lending.posLoading}><IconEye size={14} /> {lending.posLoading ? 'Unsealing…' : 'Reveal'}</button>
+          </div>
+          <div className="grid-3" style={{ gap: '12px' }}>
+            <Stat label="Collateral" value={p ? `${p.collateral}` : '████'} />
+            <Stat label="Debt" value={p ? `${p.debt}` : '████'} />
+            <Stat label="Drawn" value={p ? `${p.borrowable}` : '████'} />
+          </div>
+          <div className="flex items-center gap-2 mt-4">
+            <button className="btn btn-ghost btn-sm" onClick={() => lending.checkHealth()}>Check health (encrypted)</button>
+            {lending.health !== null && <span className="text-sm" style={{ color: lending.health ? 'var(--cm-success)' : 'var(--cm-danger)' }}>{lending.health ? '✅ Healthy (debt ≤ 75% LTV)' : '⚠️ Unhealthy'}</span>}
+          </div>
+        </div>
+        <div className="grid-3" style={{ gap: '16px', alignItems: 'start' }}>
+          <ActionCard title="Deposit collateral" desc="Mint test USDC and lock it as encrypted collateral." amount={dep} setAmount={setDep} btn="Deposit" onClick={() => lending.depositCollateral(Number(dep))} state={lending.deposit} />
+          <ActionCard title="Borrow" desc="Draw up to 75% LTV. Over-limit silently draws 0." amount={bor} setAmount={setBor} btn="Borrow" onClick={() => lending.borrow(Number(bor))} state={lending.loan} />
+          <ActionCard title="Repay" desc="Reduce your encrypted debt." amount={rep} setAmount={setRep} btn="Repay" onClick={() => lending.repay(Number(rep))} state={lending.loan} />
+        </div>
+      </div></div>
+    </div></div>
+  );
+}
+
+// ── Small shared UI helpers ──────────────────────────────────────────────────
+
+function ConnectGate({ title, onConnect, icon }: { title: string; onConnect: () => void; icon: React.ReactNode }) {
+  return (
+    <div className="dashboard"><div className="container"><div className="dashboard-content">
+      <div className="card text-center" style={{ padding: '60px 24px', maxWidth: '500px', margin: '0 auto' }}>
+        <div style={{ margin: '0 auto 16px', width: '64px', height: '64px', borderRadius: '50%', background: 'var(--cm-gradient-brand-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
+        <h3 style={{ marginBottom: '12px' }}>{title}</h3>
+        <p className="text-secondary" style={{ marginBottom: '24px', lineHeight: 1.6 }}>Connect your wallet to continue. Everything you submit is encrypted on your device.</p>
+        <button className="btn btn-primary btn-lg" onClick={onConnect}><IconWallet size={18} /> Connect Wallet</button>
+      </div>
+    </div></div></div>
+  );
+}
+
+function SurfaceHeader({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
+  return (
+    <div className="dashboard-header"><div className="flex items-center gap-3">
+      <div className="feature-icon" style={{ marginBottom: 0 }}>{icon}</div>
+      <div><h1 style={{ fontSize: '1.5rem' }}>{title}</h1><p className="text-secondary text-sm">{subtitle}</p></div>
+    </div></div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '12px', background: 'var(--cm-bg-secondary)', borderRadius: 'var(--cm-radius-md)' }}>
+      <p className="text-xs text-muted" style={{ marginBottom: '4px' }}>{label}</p>
+      <div style={{ fontFamily: 'var(--cm-font-mono)', fontSize: '1.25rem', fontWeight: 700 }}>{value}</div>
+    </div>
+  );
+}
+
+function ActionCard({ title, desc, amount, setAmount, btn, onClick, state }: { title: string; desc: string; amount: string; setAmount: (v: string) => void; btn: string; onClick: () => void; state: { loading: boolean; message: string | null; error: string | null } }) {
+  return (
+    <div className="card">
+      <h4 style={{ marginBottom: '6px' }}>{title}</h4>
+      <p className="text-secondary text-xs" style={{ marginBottom: '12px', lineHeight: 1.5 }}>{desc}</p>
+      <div className="flex items-center gap-2">
+        <input className="form-input" type="number" value={amount} onChange={e => setAmount(e.target.value)} style={{ maxWidth: '110px' }} />
+        <button className="btn btn-primary btn-sm" onClick={onClick} disabled={state.loading}>{state.loading ? '…' : btn}</button>
+      </div>
+      {state.message && <p className="text-xs mt-2" style={{ color: 'var(--cm-success)' }}>{state.message}</p>}
+      {state.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{state.error}</p>}
     </div>
   );
 }

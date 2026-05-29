@@ -1,8 +1,11 @@
 /** ethers contract handles for the CipherMind contracts (browser wallet signer). */
 
 import { BrowserProvider, Contract, type Signer } from "ethers";
-import { CREDIT_ABI, TRADING_ABI, VAULT_ABI, USDC_ABI } from "./abis";
-import { CREDIT_ADDRESS, TRADING_ADDRESS, VAULT_ADDRESS, USDC_ADDRESS, requireAddress } from "./chain";
+import { CREDIT_ABI, TRADING_ABI, VAULT_ABI, USDC_ABI, PAYROLL_ABI, LENDING_ABI } from "./abis";
+import {
+  CREDIT_ADDRESS, TRADING_ADDRESS, VAULT_ADDRESS, USDC_ADDRESS,
+  PAYROLL_ADDRESS, LENDING_ADDRESS, requireAddress,
+} from "./chain";
 
 export async function getSigner(): Promise<Signer> {
   const ethereum = (window as any).ethereum;
@@ -29,6 +32,16 @@ export async function getVaultContract(): Promise<Contract> {
 export async function getUsdcContract(): Promise<Contract> {
   const signer = await getSigner();
   return new Contract(requireAddress(USDC_ADDRESS, "USDC"), USDC_ABI, signer);
+}
+
+export async function getPayrollContract(): Promise<Contract> {
+  const signer = await getSigner();
+  return new Contract(requireAddress(PAYROLL_ADDRESS, "Payroll"), PAYROLL_ABI, signer);
+}
+
+export async function getLendingContract(): Promise<Contract> {
+  const signer = await getSigner();
+  return new Contract(requireAddress(LENDING_ADDRESS, "Lending"), LENDING_ABI, signer);
 }
 
 /** Poll a predicate until true or timeout — used to await oracle fulfillment. */
