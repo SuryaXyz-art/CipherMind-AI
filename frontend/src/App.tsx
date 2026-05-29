@@ -10,6 +10,7 @@ import { useFHE } from './hooks/useFHE';
 import { useCredit } from './hooks/useCredit';
 import { useTrading } from './hooks/useTrading';
 import { useResearch } from './hooks/useResearch';
+import { useVault } from './hooks/useVault';
 import { CreditForm, TradingForm } from './components/EncryptForm';
 import { EncryptAnimation } from './components/EncryptAnimation';
 import { CreditScoreResult, TradingSignalResult } from './components/SealedResult';
@@ -19,7 +20,7 @@ import {
   IconAlertCircle, IconRefresh, IconEye, IconZap,
 } from './components/Icons';
 
-type Page = 'home' | 'credit' | 'trading' | 'research';
+type Page = 'home' | 'vault' | 'credit' | 'trading' | 'research';
 
 function useTheme(): ['dark' | 'light', () => void] {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -47,6 +48,7 @@ function App() {
   const credit = useCredit();
   const trading = useTrading();
   const research = useResearch();
+  const vault = useVault();
 
   return (
     <>
@@ -61,6 +63,7 @@ function App() {
           <ul className="navbar-nav">
             {[
               { id: 'home', label: 'Home' },
+              { id: 'vault', label: 'Payments' },
               { id: 'credit', label: 'Credit Score' },
               { id: 'trading', label: 'Trading Signals' },
               { id: 'research', label: 'Research' },
@@ -113,6 +116,7 @@ function App() {
 
       {/* ── Pages ─────────────────────────────────────────────────── */}
       {page === 'home' && <HomePage onNavigate={setPage} />}
+      {page === 'vault' && <VaultPage isConnected={fhe.isInitialized} onConnect={fhe.connect} vault={vault} />}
       {page === 'credit' && <CreditPage isConnected={fhe.isInitialized} onConnect={fhe.connect} credit={credit} />}
       {page === 'trading' && <TradingPage isConnected={fhe.isInitialized} onConnect={fhe.connect} trading={trading} />}
       {page === 'research' && <ResearchPage isConnected={fhe.isInitialized} onConnect={fhe.connect} research={research} />}
@@ -193,6 +197,23 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
           </div>
 
           <div className="grid-3" style={{ marginTop: '48px', maxWidth: '1100px', margin: '48px auto 0' }}>
+            {/* Encrypted Payments */}
+            <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('vault')}>
+              <div style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(0,212,255,0.15), rgba(123,97,255,0.15))', border: '1px solid rgba(0,212,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
+                <IconLock size={28} color="#00d4ff" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Encrypted Payments</h3>
+              <p className="text-secondary" style={{ lineHeight: 1.7, marginBottom: '20px' }}>
+                Deposit USDC, then send it as ciphertext. Prove a balance threshold
+                without revealing the amount. Your numbers stay sealed on-chain.
+              </p>
+              <div className="flex gap-2">
+                <span className="badge badge-accent">FHE</span>
+                <span className="badge badge-info">Vault</span>
+                <span className="badge badge-success">Live</span>
+              </div>
+            </div>
+
             {/* Credit Scoring */}
             <div className="card" style={{ padding: '36px', cursor: 'pointer' }} onClick={() => onNavigate('credit')}>
               <div className="product-icon-wrap" style={{ width: '56px', height: '56px', borderRadius: 'var(--cm-radius-md)', background: 'linear-gradient(135deg, rgba(34,197,94,0.15), rgba(59,130,246,0.15))', border: '1px solid rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
@@ -663,6 +684,117 @@ function ResearchPage({ isConnected, onConnect, research }: ResearchPageProps) {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Payments / Vault Page ────────────────────────────────────────────────────
+
+interface VaultPageProps {
+  isConnected: boolean;
+  onConnect: () => void;
+  vault: ReturnType<typeof useVault>;
+}
+
+function VaultPage({ isConnected, onConnect, vault }: VaultPageProps) {
+  const [depositAmt, setDepositAmt] = useState('100');
+  const [sendTo, setSendTo] = useState('');
+  const [sendAmt, setSendAmt] = useState('25');
+  const [proofAmt, setProofAmt] = useState('50');
+
+  return (
+    <div className="dashboard">
+      <div className="container">
+        <div className="dashboard-header">
+          <div className="flex items-center gap-3">
+            <div className="feature-icon" style={{ marginBottom: 0 }}><IconLock size={22} color="var(--cm-accent-1)" /></div>
+            <div>
+              <h1 style={{ fontSize: '1.5rem' }}>Encrypted Payments</h1>
+              <p className="text-secondary text-sm">Deposit once, then move money as ciphertext. Balances stay sealed on-chain.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="dashboard-content">
+          {!isConnected ? (
+            <div className="card text-center" style={{ padding: '60px 24px', maxWidth: '500px', margin: '0 auto' }}>
+              <div style={{ margin: '0 auto 16px', width: '64px', height: '64px', borderRadius: '50%', background: 'var(--cm-gradient-brand-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <IconWallet size={28} color="var(--cm-accent-1)" />
+              </div>
+              <h3 style={{ marginBottom: '12px' }}>Connect Your Wallet</h3>
+              <p className="text-secondary" style={{ marginBottom: '24px', lineHeight: 1.6 }}>
+                Connect to deposit test USDC and start moving encrypted balances.
+              </p>
+              <button className="btn btn-primary btn-lg" onClick={onConnect} id="connect-vault">
+                <IconWallet size={18} /> Connect Wallet
+              </button>
+            </div>
+          ) : (
+            <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+              {/* Sealed balance */}
+              <div className="card" style={{ marginBottom: '16px', textAlign: 'center', padding: '32px' }}>
+                <p className="text-xs text-muted" style={{ textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Your encrypted balance</p>
+                <div style={{ fontFamily: 'var(--cm-font-mono)', fontSize: '2.25rem', fontWeight: 700, letterSpacing: '0.05em' }}>
+                  {vault.balance === null ? '████' : `${vault.balance} USDC`}
+                </div>
+                <button className="btn btn-ghost btn-sm mt-4" onClick={() => vault.refreshBalance()} disabled={vault.balanceLoading} id="reveal-balance">
+                  <IconEye size={14} /> {vault.balanceLoading ? 'Unsealing…' : vault.balance === null ? 'Unseal balance' : 'Refresh'}
+                </button>
+              </div>
+
+              <div className="grid-2" style={{ alignItems: 'start' }}>
+                {/* Deposit */}
+                <div className="card" style={{ marginBottom: '16px' }}>
+                  <h3 style={{ marginBottom: '8px' }}>Deposit</h3>
+                  <p className="text-secondary text-sm" style={{ marginBottom: '16px' }}>Mint test USDC and seal it into your encrypted balance.</p>
+                  <div className="flex items-center gap-2">
+                    <input className="form-input" type="number" value={depositAmt} onChange={e => setDepositAmt(e.target.value)} style={{ maxWidth: '140px' }} id="deposit-amount" />
+                    <button className="btn btn-primary btn-sm" onClick={() => vault.depositFunds(Number(depositAmt))} disabled={vault.deposit.loading} id="deposit-btn">
+                      {vault.deposit.loading ? 'Working…' : 'Deposit'}
+                    </button>
+                  </div>
+                  {vault.deposit.message && <p className="text-xs mt-2" style={{ color: 'var(--cm-success)' }}>{vault.deposit.message}</p>}
+                  {vault.deposit.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{vault.deposit.error}</p>}
+                </div>
+
+                {/* Send */}
+                <div className="card" style={{ marginBottom: '16px' }}>
+                  <h3 style={{ marginBottom: '8px' }}>Private Send</h3>
+                  <p className="text-secondary text-sm" style={{ marginBottom: '16px' }}>The amount becomes ciphertext the moment you send. Only the recipient can read it.</p>
+                  <input className="form-input" type="text" placeholder="0x recipient address" value={sendTo} onChange={e => setSendTo(e.target.value)} style={{ width: '100%', fontFamily: 'var(--cm-font-mono)', fontSize: '0.8rem', marginBottom: '8px' }} id="send-to" />
+                  <div className="flex items-center gap-2">
+                    <input className="form-input" type="number" value={sendAmt} onChange={e => setSendAmt(e.target.value)} style={{ maxWidth: '140px' }} id="send-amount" />
+                    <button className="btn btn-primary btn-sm" onClick={() => vault.sendFunds(sendTo.trim(), Number(sendAmt))} disabled={vault.transfer.loading || !sendTo.trim()} id="send-btn">
+                      {vault.transfer.loading ? 'Sending…' : 'Send (encrypted)'}
+                    </button>
+                  </div>
+                  {vault.transfer.message && <p className="text-xs mt-2" style={{ color: 'var(--cm-success)' }}>{vault.transfer.message}</p>}
+                  {vault.transfer.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{vault.transfer.error}</p>}
+                </div>
+              </div>
+
+              {/* Balance proof */}
+              <div className="card">
+                <h3 style={{ marginBottom: '8px' }}>Balance Proof</h3>
+                <p className="text-secondary text-sm" style={{ marginBottom: '16px' }}>Prove your balance meets a threshold without revealing the actual number.</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-secondary">Balance ≥</span>
+                  <input className="form-input" type="number" value={proofAmt} onChange={e => setProofAmt(e.target.value)} style={{ maxWidth: '120px' }} id="proof-amount" />
+                  <button className="btn btn-secondary btn-sm" onClick={() => vault.proveBalance(Number(proofAmt))} disabled={vault.proof.loading} id="prove-btn">
+                    {vault.proof.loading ? 'Proving…' : 'Prove (encrypted)'}
+                  </button>
+                </div>
+                {vault.proof.meets !== null && (
+                  <p className="text-sm mt-2" style={{ color: vault.proof.meets ? 'var(--cm-success)' : 'var(--cm-text-secondary)' }}>
+                    {vault.proof.meets ? `✅ Verified: your balance is ≥ ${vault.proof.value} USDC` : `❌ Your balance is below ${vault.proof.value} USDC`} — the exact amount stayed sealed.
+                  </p>
+                )}
+                {vault.proof.error && <p className="text-xs mt-2" style={{ color: 'var(--cm-danger)' }}>{vault.proof.error}</p>}
+              </div>
             </div>
           )}
         </div>

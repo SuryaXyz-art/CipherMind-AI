@@ -16,6 +16,28 @@ export const CREDIT_ABI = [
   "event CreditFulfilled(address indexed user, uint256 requestId)",
 ];
 
+export const USDC_ABI = [
+  "function faucet(uint256 amount)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "function balanceOf(address) view returns (uint256)",
+  "function decimals() view returns (uint8)",
+];
+
+export const VAULT_ABI = [
+  "function usdc() view returns (address)",
+  "function hasAccount(address) view returns (bool)",
+  "function deposit(uint256 amount)",
+  "function send(address to, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) encAmount)",
+  "function proveBalanceAtLeast((uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) encThreshold)",
+  "function getBalanceProof() view returns (uint256)",
+  "function getEncryptedBalance() view returns (uint256)",
+  "function grantBalanceAccess(address viewer)",
+  "event Deposited(address indexed user, uint256 amount)",
+  "event PrivateTransfer(address indexed from, address indexed to)",
+  "event BalanceProofReady(address indexed user)",
+];
+
 export const TRADING_ABI = [
   "function submitPosition((uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) positionSize, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) entryPrice, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) stopLoss, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) takeProfit, (uint256 ctHash, uint8 securityZone, uint8 utype, bytes signature) riskTolerance, string asset)",
   "function latestSignal(address) view returns (uint256 direction, uint256 strength, uint256 riskLevel, uint256 suggestedEntry, bool fulfilled, uint256 timestamp)",
