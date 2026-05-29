@@ -1023,3 +1023,45 @@ main, .dashboard { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
 }
+
+/* ── Editorial section eyebrow ─────────────────────────────────────────── */
+.section-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--cm-accent-1);
+  margin-bottom: 10px;
+}
+
+/* ── Professional footer ───────────────────────────────────────────────── */
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 32px;
+}
+.footer-h {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cm-text-tertiary);
+  margin-bottom: 14px;
+}
+.footer-link {
+  display: block;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 0;
+  margin-bottom: 10px;
+  color: var(--cm-text-secondary);
+  font-size: 0.875rem;
+  font-family: var(--cm-font-sans);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--cm-transition-fast);
+}
+.footer-link:hover { color: var(--cm-accent-1); }
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
+}

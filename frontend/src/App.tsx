@@ -285,51 +285,36 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
               You unseal results with your own key. Nobody else — not an operator, not the chain — ever sees the underlying numbers.
             </p>
           </Reveal>
-
-          {/* The encrypted flow */}
-          <Reveal delay={120}>
-            <div className="grid-4" style={{ marginTop: '56px', gap: '12px' }}>
-              {[
-                { step: '01', t: 'Encrypt on device', d: 'Your inputs become ciphertext in the browser before they ever leave it.' },
-                { step: '02', t: 'Compute on ciphertext', d: 'Contracts run FHE arithmetic & comparisons on encrypted state.' },
-                { step: '03', t: 'Reason privately', d: 'Hermes agents act over a sealed channel — never on raw values.' },
-                { step: '04', t: 'Unseal only for you', d: 'Results are released to your key alone, or a viewer you choose.' },
-              ].map((s, i) => (
-                <Reveal key={s.step} delay={i * 90}>
-                  <div className="card" style={{ height: '100%' }}>
-                    <div className="mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--cm-accent-1)', marginBottom: '8px' }}>{s.step}</div>
-                    <h4 style={{ marginBottom: '6px' }}>{s.t}</h4>
-                    <p className="text-secondary text-sm" style={{ lineHeight: 1.6 }}>{s.d}</p>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
-          </Reveal>
         </div>
       </section>
 
       {/* Features Section */}
       <section className="section" id="features">
         <div className="container">
-          <div className="text-center mb-6">
-            <h2 className="gradient-text" style={{ display: 'inline-block' }}>How It Works</h2>
-            <p className="text-secondary mt-2" style={{ maxWidth: '500px', margin: '12px auto 0' }}>
-              Privacy-preserving AI analytics in four trustless steps
-            </p>
-          </div>
+          <Reveal>
+            <div className="text-center mb-6">
+              <p className="section-eyebrow">How it works</p>
+              <h2 className="gradient-text" style={{ display: 'inline-block' }}>Encrypted end to end, in four steps</h2>
+              <p className="text-secondary mt-2" style={{ maxWidth: '520px', margin: '12px auto 0' }}>
+                The data is sealed before it leaves your device and only you hold the key to unseal the result.
+              </p>
+            </div>
+          </Reveal>
 
           <div className="grid-4" style={{ marginTop: '48px' }}>
             {[
-              { Icon: IconLock, title: 'Encrypt Locally', desc: 'Your data is encrypted on your device using FHE before it ever leaves your browser.', color: 'var(--cm-accent-1)' },
-              { Icon: IconLink, title: 'Submit On-Chain', desc: 'Encrypted data is submitted to Fhenix CoFHE smart contracts on Arbitrum Sepolia.', color: 'var(--cm-accent-2)' },
-              { Icon: IconCpu, title: 'AI Inference', desc: 'Nous Hermes AI analyzes anonymized feature bands — never your raw numbers.', color: 'var(--cm-accent-3)' },
-              { Icon: IconUnlock, title: 'Unseal Results', desc: 'Only you can decrypt the encrypted results using your private key.', color: 'var(--cm-success)' },
+              { Icon: IconLock, title: 'Encrypt locally', desc: 'Inputs are encrypted in your browser with the CoFHE SDK before anything is sent.', color: 'var(--cm-accent-1)' },
+              { Icon: IconLink, title: 'Submit on-chain', desc: 'Ciphertext is written to Fhenix CoFHE contracts on Arbitrum Sepolia.', color: 'var(--cm-accent-2)' },
+              { Icon: IconCpu, title: 'Compute & reason', desc: 'Contracts run FHE ops on encrypted state; Hermes agents reason on anonymized bands — never raw numbers.', color: 'var(--cm-accent-3)' },
+              { Icon: IconUnlock, title: 'Unseal for you', desc: 'Results decrypt only with your key — or a single viewer you explicitly grant.', color: 'var(--cm-success)' },
             ].map((feature, i) => (
-              <div key={i} className={`card feature-card animate-fade-in stagger-${i + 1}`}>
-                <div className="feature-icon"><feature.Icon size={24} color={feature.color} /></div>
-                <h4 className="feature-title">{feature.title}</h4>
-                <p className="feature-desc">{feature.desc}</p>
-              </div>
+              <Reveal key={i} delay={i * 90}>
+                <div className="card feature-card" style={{ height: '100%' }}>
+                  <div className="feature-icon"><feature.Icon size={24} color={feature.color} /></div>
+                  <h4 className="feature-title">{feature.title}</h4>
+                  <p className="feature-desc">{feature.desc}</p>
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -338,12 +323,15 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
       {/* Products Section */}
       <section className="section" id="products" style={{ background: 'var(--cm-bg-secondary)' }}>
         <div className="container">
-          <div className="text-center mb-6">
-            <h2 className="gradient-text" style={{ display: 'inline-block' }}>Products</h2>
-            <p className="text-secondary mt-2" style={{ maxWidth: '500px', margin: '12px auto 0' }}>
-              Institutional-grade analytics with zero-knowledge privacy
-            </p>
-          </div>
+          <Reveal>
+            <div className="text-center mb-6">
+              <p className="section-eyebrow">The surfaces</p>
+              <h2 className="gradient-text" style={{ display: 'inline-block' }}>Sixteen confidential surfaces, one vault</h2>
+              <p className="text-secondary mt-2" style={{ maxWidth: '520px', margin: '12px auto 0' }}>
+                Institutional-grade primitives — payments, lending, payroll, governance, AI — each computing on encrypted state.
+              </p>
+            </div>
+          </Reveal>
 
           <div className="grid-3" style={{ marginTop: '48px', maxWidth: '1100px', margin: '48px auto 0' }}>
             {/* Encrypted Payments */}
@@ -655,6 +643,39 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
         </div>
       </section>
 
+      {/* Use Cases */}
+      <section className="section" id="use-cases" style={{ background: 'var(--cm-bg-secondary)' }}>
+        <div className="container">
+          <Reveal>
+            <div className="text-center mb-6">
+              <p className="section-eyebrow">Where it matters</p>
+              <h2 className="gradient-text" style={{ display: 'inline-block' }}>Built for what transparent rails can't do</h2>
+              <p className="text-secondary mt-2" style={{ maxWidth: '560px', margin: '12px auto 0' }}>
+                Privacy-by-design unlocks categories that simply don't work on public chains.
+              </p>
+            </div>
+          </Reveal>
+          <div className="grid-3" style={{ maxWidth: '1100px', margin: '40px auto 0' }}>
+            {[
+              { Icon: IconBarChart, c: '#22c55e', t: 'Confidential DeFi', d: 'Lending with encrypted collateral and health factors, sealed-bid mechanics, MEV-resistant execution.' },
+              { Icon: IconSend, c: '#00d4ff', t: 'Private payments', d: 'Payroll, contractor payouts, and treasury movement where amounts never hit a public ledger.' },
+              { Icon: IconShieldCheck, c: '#7b61ff', t: 'Confidential governance', d: 'Coercion-resistant voting — individual ballots are never stored, only the encrypted tally.' },
+              { Icon: IconShield, c: '#f59e0b', t: 'RWA & compliance', d: 'Encrypted financial data and reputation with selective disclosure for auditors and lenders.' },
+              { Icon: IconCpu, c: '#c084fc', t: 'Privacy-preserving AI', d: 'Agents that reason and act over a sealed channel — computation without exposing inputs.' },
+              { Icon: IconLock, c: '#06b6d4', t: 'Institutional rails', d: 'The confidentiality that compliance teams require before they will deploy on-chain at all.' },
+            ].map((u, i) => (
+              <Reveal key={u.t} delay={(i % 3) * 90}>
+                <div className="card" style={{ height: '100%' }}>
+                  <div className="feature-icon" style={{ marginBottom: '14px' }}><u.Icon size={22} color={u.c} /></div>
+                  <h4 style={{ marginBottom: '8px' }}>{u.t}</h4>
+                  <p className="text-secondary text-sm" style={{ lineHeight: 1.7 }}>{u.d}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Tech Stack */}
       <section className="section">
         <div className="container text-center">
@@ -668,11 +689,43 @@ function HomePage({ onNavigate }: { onNavigate: (page: Page) => void }) {
       </section>
 
       {/* Footer */}
-      <footer style={{ padding: '32px 0', borderTop: '1px solid var(--cm-border)', textAlign: 'center' }}>
+      <footer style={{ padding: '56px 0 32px', borderTop: '1px solid var(--cm-border)' }}>
         <div className="container">
-          <p className="text-xs text-muted">
-            &copy; 2026 CipherMind AI — Privacy-first intelligence powered by FHE
-          </p>
+          <div className="footer-grid">
+            <div style={{ maxWidth: '300px' }}>
+              <div className="flex items-center gap-3" style={{ marginBottom: '14px' }}>
+                <img src="/ciphermind-logo.png" alt="CipherMind AI" style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover' }} />
+                <span style={{ fontWeight: 700, letterSpacing: '-0.02em' }}>CipherMind</span>
+              </div>
+              <p className="text-secondary text-sm" style={{ lineHeight: 1.7 }}>
+                Intelligence without exposure. Autonomous AI agents and a confidential-finance suite on encrypted data — Fhenix CoFHE × Nous Hermes.
+              </p>
+            </div>
+            <div>
+              <h5 className="footer-h">Platform</h5>
+              <button className="footer-link" onClick={() => onNavigate('vault')}>Payments</button>
+              <button className="footer-link" onClick={() => onNavigate('agents')}>Agent Council</button>
+              <button className="footer-link" onClick={() => onNavigate('governance')}>Governance</button>
+              <button className="footer-link" onClick={() => onNavigate('reputation')}>Reputation</button>
+            </div>
+            <div>
+              <h5 className="footer-h">Build</h5>
+              <a className="footer-link" href="https://docs.fhenix.io" target="_blank" rel="noreferrer">Fhenix Docs ↗</a>
+              <a className="footer-link" href="https://cofhe-docs.fhenix.zone" target="_blank" rel="noreferrer">CoFHE Docs ↗</a>
+              <a className="footer-link" href="https://sepolia.arbiscan.io/address/0x1FEE1713517C0d33c01E63D3Af8ed4789a3eA1E6#code" target="_blank" rel="noreferrer">Verified Contracts ↗</a>
+              <a className="footer-link" href="https://github.com/SuryaXyz-art/CipherMind-AI" target="_blank" rel="noreferrer">GitHub ↗</a>
+            </div>
+            <div>
+              <h5 className="footer-h">Network</h5>
+              <span className="footer-link" style={{ cursor: 'default' }}>Arbitrum Sepolia</span>
+              <span className="footer-link" style={{ cursor: 'default' }}>11 verified contracts</span>
+              <span className="footer-link" style={{ cursor: 'default' }}>Hermes 4 (70B)</span>
+            </div>
+          </div>
+          <div style={{ borderTop: '1px solid var(--cm-border)', marginTop: '32px', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            <p className="text-xs text-muted">&copy; 2026 CipherMind AI — privacy-first intelligence powered by FHE.</p>
+            <p className="text-xs text-muted">Built for the Privacy-by-Design Buildathon · Fhenix ecosystem.</p>
+          </div>
         </div>
       </footer>
     </main>
